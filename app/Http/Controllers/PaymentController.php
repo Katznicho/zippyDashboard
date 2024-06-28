@@ -301,7 +301,7 @@ class PaymentController extends Controller
         }
     }
 
-    public function processOrder(Request $request)
+    public function processOrder(Request $request, $amount , $phone ,$re)
     {
 
 
@@ -320,9 +320,10 @@ class PaymentController extends Controller
                 'reference' => 'required|string',
 
             ]);
+            //https://dashboard.zippyug.com/finishPayment
             $amount = $request->input('amount');
             $phone = $request->input('phone_number');
-            $callback = $request->input('callback');
+            $callback = "https://dashboard.zippyug.com/finishPayment";
             //$reference = Str::uuid();
             $reference = $request->input('reference');
             $description = $request->input('description') ?? 'Buying points';
@@ -332,7 +333,7 @@ class PaymentController extends Controller
             // $customer_id = $getCustomer->id;
             $cancel_url = $request->input('cancel_url');
             //add the payment reference to cancel url
-            $cancel_url = $cancel_url . '?payment_reference=' . $reference;
+            $cancel_url = "https://dashboard.zippyug.com/cancelPayment" . '?payment_reference=' . $reference;
             $payment_type = $request->input('payment_type');
             $product_id = $request->input('product_id');
             // return $payment_type;

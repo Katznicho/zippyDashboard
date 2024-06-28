@@ -15,6 +15,7 @@ use App\Models\User;
 use App\Models\UserAccount;
 use App\Models\UserDevice;
 use App\Models\ZippyAlert;
+use App\Payments\Pesapal;
 use App\Traits\AppUserTrait;
 use App\Traits\MessageTrait;
 use App\Traits\SendPushNotification;
@@ -626,6 +627,27 @@ class AppUserController extends Controller
                 return response()->json(['success' => false, 'message' => 'Something went wrong.']);
             }
             else{
+
+                // $amount = $request->input('total_price');
+                $amount =  500;
+                $phone = $user->phone_number;
+                $callback = "https://dashboard.zippyug.com/finishPayment";
+                //$reference = Str::uuid();
+                $reference = $reference;
+                $description = "Payment for a property booking";
+                $names = explode(" ", $user->name);
+                $first_name = $names[0];
+                $second_name = $names[1];
+                $email = $user->email;
+                $cancel_url = "https://dashboard.zippyug.com/cancelPayment" . '?payment_reference=' . $reference;
+                $payment_type = "Booking";
+                
+                // return $payment_type;
+                // return $amount;
+                $data = Pesapal::orderProcess($reference, $amount, $phone, $description, $callback, $first_name, $email, $second_name, $cancel_url, $payment_type, 'App', $product_id);
+                
+    
+                return response()->json(['success' => true, 'message' => 'Order processed successfully', 'response' => $data]);
 
                 return response()->json(['success' => true, 'message' => 'Booking created successfully.']);
             }
