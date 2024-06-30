@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Amenity;
 use App\Models\Category;
+use App\Models\Comment;
 use App\Models\Currency;
 use App\Models\PaymentPeriod;
 use App\Models\Property;
@@ -138,7 +139,6 @@ class GeneralController extends Controller
                     'paymentPeriod',
                     'status',
                     'currency'
-
                 ])
                 ->paginate($limit, ['*'], 'page', $page);
 
@@ -157,5 +157,43 @@ class GeneralController extends Controller
             //throw $th;
             return response()->json(['success' => false, 'message' => $th->getMessage()]);
         }
+    }
+
+    public function getPropertyCommentsByIdAndPaginated(Request $request){
+        try {
+             $request->validate([
+                 'property_id' => 'required'
+             ]);
+              $limit = $request->input('limit', 100);
+              $page = $request->input('page', 1);
+              $sortOrder = $request->input('sort_order', 'desc');
+
+              $comments = Comment::where('property_id', $request->property_id)
+              ->orderBy('id', $sortOrder)
+              ->with([
+                'appUser'
+              ])
+              ->paginate($limit, ['*'], 'page', $page);
+
+              $response = [
+                  "data" => $comments->items(),
+                  "pagination" => [
+                      "total" => $comments->total(),
+                      "current_page" => $comments->currentPage(),
+                      "last_page" => $comments->lastPage(),
+                      "per_page" => $comments->perPage(),
+                  ]
+                  ];
+
+            return response()->json(['response' => "success", 'data' => $response], 200);
+
+            //  $comments = Comment::where('property_id', $request->property_id)->get();
+
+             //return response()->json(['success' => true, 'data' => $comments, 'message' => 'Property comments successfully.']);
+        } catch (\Throwable $th) {
+            return response()->json(['success' => false, 'message' => $th->getMessage()]);
+            
+        }
+
     }
 }

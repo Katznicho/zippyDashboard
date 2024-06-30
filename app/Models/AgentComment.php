@@ -5,13 +5,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Comment extends Model
+class AgentComment extends Model
 {
     use HasFactory;
 
     protected $fillable = [
         'property_id',
-        'user_id',
         'body',
         'is_approved',
         'app_user_id',
@@ -34,5 +33,4 @@ class Comment extends Model
     {
         return $this->belongsTo(AppUser::class);
     }
-    
 }

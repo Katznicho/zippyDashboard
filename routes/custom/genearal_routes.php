@@ -20,3 +20,4 @@ Route::get("getAllCurrencies", [GeneralController::class, "getAllCurrencies"]);
 Route::get("getAllPaymentPeriods", [GeneralController::class, "getAllPaymentPeriods"]);
 
 Route::get("getAllPropertiesByPagination", [GeneralController::class, "getAllPropertiesByPagination"]);
+Route::get("getPropertyCommentsByIdAndPaginated", [GeneralController::class, "getPropertyCommentsByIdAndPaginated"]);

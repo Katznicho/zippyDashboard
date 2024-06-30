@@ -8,6 +8,7 @@ use App\Mail\UserVerification;
 use App\Mail\WalletActivated;
 use App\Models\AppUser;
 use App\Models\Booking;
+use App\Models\Comment;
 use App\Models\Payment;
 use App\Models\PointUsage;
 use App\Models\PropertyNotification;
@@ -773,15 +774,15 @@ class AppUserController extends Controller
         try {   
             $request->validate([
                 'property_id' => 'required',
-                'body' => 'required',
+                'message' => 'required',
+                 'rating'=>'required'
             ]);
             $user_id =  $this->getCurrentLoggedAppUserBySanctum()->id;
-            $res = PropertyNotification::create([
+            $res = Comment::create([
                 'app_user_id' => $user_id,
                 'property_id' => $request->property_id,
-                'is_like' => 0,
-                'dislike' => 0,
-                'body' => $request->body
+                'rating' => $request->rating,
+                'body' => $request->message,
             ]);
             return response()->json(['success' => true, 'data' => $res, 'message' => 'Property comment successfully.']);
     }
@@ -789,5 +790,23 @@ class AppUserController extends Controller
     catch (\Throwable $th) {
         return response()->json(['success' => false, 'message' => $th->getMessage()]);
     }
+    }
+
+    public function editProfile(Request $request)
+    {
+        try {
+             $request->validate([
+                 'first_name'=>'required',
+                 'last_name'=>'required',
+                 'phone_number'=>'required',
+                 'dob'=>'required',
+             ]);
+            $user = $this->getCurrentLoggedAppUserBySanctum();
+            $user->name = $request->name;
+            $user->save();
+            return response()->json(['success' => true, 'message' => 'Profile updated successfully.']);
+        } catch (\Throwable $th) {
+            return response()->json(['success' => false, 'message' => $th->getMessage()]);
+        }
     }
 }
