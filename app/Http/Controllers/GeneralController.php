@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AgentComment;
 use App\Models\Amenity;
 use App\Models\Category;
 use App\Models\Comment;
@@ -191,6 +192,42 @@ class GeneralController extends Controller
 
              //return response()->json(['success' => true, 'data' => $comments, 'message' => 'Property comments successfully.']);
         } catch (\Throwable $th) {
+            return response()->json(['success' => false, 'message' => $th->getMessage()]);
+            
+        }
+    }
+
+        public function getPropertyAgentCommentsByIdAndPaginated(Request $request){
+            try {
+                 $request->validate([
+                     'agent_id' => 'required'
+                 ]);
+                  $limit = $request->input('limit', 100);
+                  $page = $request->input('page', 1);
+                  $sortOrder = $request->input('sort_order', 'desc');
+
+                  $comments = AgentComment::where('agent_id', $request->agent_id)
+                  ->orderBy('id', $sortOrder)
+                  ->with([
+                    'appUser',
+                    'agent'
+                  ])
+                  ->paginate($limit, ['*'], 'page', $page);
+
+                  $response = [
+                      "data" => $comments->items(),
+                      "pagination" => [
+                          "total" => $comments->total(),
+                          "current_page" => $comments->currentPage(),
+                          "last_page" => $comments->lastPage(),
+                          "per_page" => $comments->perPage(),
+                      ]
+                      ];
+
+                return response()->json(['response' => "success", 'data' => $response], 200);
+                      
+        }
+        catch (\Throwable $th) {
             return response()->json(['success' => false, 'message' => $th->getMessage()]);
             
         }

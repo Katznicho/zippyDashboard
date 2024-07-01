@@ -52,6 +52,11 @@ Route::prefix('app-user')->group(function () {
         Route::post("dislikeProperty", [AppUserController::class, "dislikeProperty"]);
 
         Route::post("commentOnProperty", [AppUserController::class, "commentOnProperty"]);
+        Route::post("commentOnAgentProperty", [AppUserController::class, "commentOnAgentProperty"]);
+    
+        Route::get("getAppUserSavedPropertiesByPaginated", [AppUserController::class , "getAppUserSavedPropertiesByPaginated"]);
+
+        Route::post("checkIfPropertyLikedByUser", [AppUserController::class, "checkIfPropertyLiked"]);
 
         // Route::post('setUpUserWalletAccount', [AuthController::class, 'setUpUserWalletAccount']);
         // Route::post('updateShowWalletBalance', [AuthController::class, 'updateShowWalletBalance']);

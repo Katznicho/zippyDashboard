@@ -10,7 +10,7 @@ class AgentComment extends Model
     use HasFactory;
 
     protected $fillable = [
-        'property_id',
+        'agent_id',
         'body',
         'is_approved',
         'app_user_id',
@@ -23,6 +23,9 @@ class AgentComment extends Model
         return $this->belongsTo(Property::class);
     }
 
+    public function agent(){
+        return $this->belongsTo(Agent::class);
+    }
 
     public function user()
     {

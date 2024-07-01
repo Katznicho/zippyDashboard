@@ -6,9 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Mail\RequestPasswordReset;
 use App\Mail\UserVerification;
 use App\Mail\WalletActivated;
+use App\Models\AgentComment;
 use App\Models\AppUser;
 use App\Models\Booking;
 use App\Models\Comment;
+use App\Models\Likes;
 use App\Models\Payment;
 use App\Models\PointUsage;
 use App\Models\PropertyNotification;
@@ -434,16 +436,16 @@ class AppUserController extends Controller
             $user = User::find($user_id);
 
             $request->validate([
-                'services' => 'required|array',
-                'amenities' => 'required|array',
+                //'services' => 'required|array',
+                //'amenities' => 'required|array',
                 // 'contact_options' => 'required|array',
-                'number_of_bedrooms' => 'required',
-                'number_of_bathrooms' => 'required',
-                'cost' => 'required',
+                //'number_of_bedrooms' => 'required',
+                //'number_of_bathrooms' => 'required',
+                //'cost' => 'required',
                 'category_id' => 'required',
-                'longitude' => 'required',
-                'latitude' => 'required',
-                'address' => 'required',
+                //'longitude' => 'required',
+                //'latitude' => 'required',
+                //'address' => 'required',
             ]);
 
             $this->zippySearchAlgorithm($request, $user);
@@ -570,7 +572,7 @@ class AppUserController extends Controller
             $sortOrder = $request->input('sort_order', 'desc');
             // $user_id = $this->getCurrentLoggedUserBySanctum()->id;
             $user_id =  $this->getCurrentLoggedAppUserBySanctum()->id;
-            $res = PropertyNotification::where('app_user_id', $user_id)->where('is_like', true)->orderBy('id', $sortOrder)->with([
+            $res = Likes::where('app_user_id', $user_id)->where('is_like', true)->orderBy('id', $sortOrder)->with([
                 'user', 'property', 'appUser'
             ])->paginate($limit, ['*'], 'page', $page);
             $response = [
@@ -645,7 +647,7 @@ class AppUserController extends Controller
                 
                 // return $payment_type;
                 // return $amount;
-                $data = Pesapal::orderProcess($reference, $amount, $phone, $description, $callback, $first_name, $email, $second_name, $cancel_url, $payment_type, 'App', $product_id);
+                $data = Pesapal::orderProcess($reference, $amount, $phone, $description, $callback, $first_name, $email, $second_name, $cancel_url, $payment_type, 'App', );
                 
     
                 return response()->json(['success' => true, 'message' => 'Order processed successfully', 'response' => $data]);
@@ -730,45 +732,102 @@ class AppUserController extends Controller
     }
 
     public function likeProperty(Request $request){
-
         try {   
             $request->validate([
                 'property_id' => 'required',
             ]);
+            
             $user_id =  $this->getCurrentLoggedAppUserBySanctum()->id;
-            $res = PropertyNotification::create([
-                'app_user_id' => $user_id,
-                'property_id' => $request->property_id,
-                'is_like' => 1,
-                'dislike' => 0,
-            ]);
-            return response()->json(['success' => true, 'data' => $res, 'message' => 'Property liked successfully.']);
+    
+            // Check if a record already exists for the given user and property
+            $like = Likes::where('app_user_id', $user_id)
+                          ->where('property_id', $request->property_id)
+                          ->first();
+    
+            if ($like) {
+                // Update the existing record
+                $like->is_like = 1;
+                $like->is_dislike = 0;
+                $like->save();
+            } else {
+                // Create a new record
+                $like = Likes::create([
+                    'app_user_id' => $user_id,
+                    'property_id' => $request->property_id,
+                    'is_like' => 1,
+                    'is_dislike' => 0,
+                ]);
+            }
+    
+            return response()->json(['success' => true, 'data' => $like, 'message' => 'Property liked successfully.']);
+        }
+        catch (\Throwable $th) {
+            return response()->json(['success' => false, 'message' => $th->getMessage()]);
+        }
     }
-
-    catch (\Throwable $th) {
-        return response()->json(['success' => false, 'message' => $th->getMessage()]);
-    }
-    }
-
+    
     public function dislikeProperty(Request $request){
         try {   
             $request->validate([
                 'property_id' => 'required',
             ]);
+    
             $user_id =  $this->getCurrentLoggedAppUserBySanctum()->id;
-            $res = PropertyNotification::create([
-                'app_user_id' => $user_id,
-                'property_id' => $request->property_id,
-                'is_like' => 0,
-                'dislike' => 1,
-            ]);
-            return response()->json(['success' => true, 'data' => $res, 'message' => 'Property disliked successfully.']);
+    
+            // Check if a record already exists for the given user and property
+            $like = Likes::where('app_user_id', $user_id)
+                          ->where('property_id', $request->property_id)
+                          ->first();
+    
+            if ($like) {
+                // Update the existing record
+                $like->is_like = 0;
+                $like->is_dislike = 1;
+                $like->save();
+            } else {
+                // Create a new record
+                $like = Likes::create([
+                    'app_user_id' => $user_id,
+                    'property_id' => $request->property_id,
+                    'is_like' => 0,
+                    'is_dislike' => 1,
+                ]);
+            }
+    
+            return response()->json(['success' => true, 'data' => $like, 'message' => 'Property disliked successfully.']);
+        }
+        catch (\Throwable $th) {
+            return response()->json(['success' => false, 'message' => $th->getMessage()]);
+        }
     }
 
-    catch (\Throwable $th) {
-        return response()->json(['success' => false, 'message' => $th->getMessage()]);
+    public function checkIfPropertyLiked(Request $request){
+        try {
+            $request->validate([
+                'property_id' => 'required',
+            ]);
+
+            $user_id =  $this->getCurrentLoggedAppUserBySanctum()->id;
+
+            $res = Likes::where('app_user_id', $user_id)
+            ->where('property_id', $request->property_id)
+            ->where('is_like', 1)
+            ->where('is_dislike', 0)
+            ->first();
+            if(!$res){
+                return response()->json(['success' => false, 'message' => 'Property not liked.']);
+            }
+
+            return response()->json(['success' => true, 'message' => 'Property liked successfully.']);
+        } catch (\Throwable $th) {
+            return response()->json(['success' => false, 'message' => $th->getMessage()]);
+
+            
+        }
     }
-    }
+    
+
+
 
     public function commentOnProperty(Request $request){
         try {   
@@ -790,6 +849,62 @@ class AppUserController extends Controller
     catch (\Throwable $th) {
         return response()->json(['success' => false, 'message' => $th->getMessage()]);
     }
+    }
+
+
+    public function commentOnAgentProperty(Request $request){
+        try {   
+            $request->validate([
+                'agent_id' => 'required',
+                'message' => 'required',
+                'rating'=>'required'
+            ]);
+            $user_id =  $this->getCurrentLoggedAppUserBySanctum()->id;
+            $res = AgentComment::create([
+                'app_user_id' => $user_id,
+                'agent_id' => $request->agent_id,
+                'rating' => $request->rating,
+                'body' => $request->message,
+            ]);
+            return response()->json(['success' => true, 'data' => $res, 'message' => 'Agent comment successfully.']);
+        }
+
+        catch (\Throwable $th) {
+            return response()->json(['success' => false, 'message' => $th->getMessage()]);
+        }
+
+    }
+
+    public function getAppUserSavedPropertiesByPaginated(Request $request){
+
+        try {
+            $user_id =  $this->getCurrentLoggedAppUserBySanctum()->id;
+
+            $limit = $request->input('limit', 100);
+            $page = $request->input('page', 1);
+            $sortOrder = $request->input('sort_order', 'desc');
+
+            $res = Likes::where('app_user_id', $user_id)->orderBy('id', $sortOrder)->with([
+                'property'
+            ])->paginate($limit, ['*'], 'page', $page);
+
+            $response = [
+                "data" => $res->items(),
+                "pagination" => [
+                    "total" => $res->total(),
+                    "current_page" => $res->currentPage(),
+                    "last_page" => $res->lastPage(),
+                    "per_page" => $res->perPage(),
+                ]
+                ];
+
+            return response()->json(['success' => true, 'data' => $response, 'message' => 'Property saved successfully.']); 
+        }
+
+        catch (\Throwable $th) {
+            return response()->json(['success' => false, 'message' => $th->getMessage()]);
+        }
+
     }
 
     public function editProfile(Request $request)

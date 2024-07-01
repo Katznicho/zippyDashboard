@@ -21,3 +21,4 @@ Route::get("getAllPaymentPeriods", [GeneralController::class, "getAllPaymentPeri
 
 Route::get("getAllPropertiesByPagination", [GeneralController::class, "getAllPropertiesByPagination"]);
 Route::get("getPropertyCommentsByIdAndPaginated", [GeneralController::class, "getPropertyCommentsByIdAndPaginated"]);
+Route::get("getPropertyAgentCommentsByIdAndPaginated", [GeneralController::class, "getPropertyAgentCommentsByIdAndPaginated"]);
