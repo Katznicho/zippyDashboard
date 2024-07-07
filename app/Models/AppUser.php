@@ -13,6 +13,9 @@ class AppUser extends Authenticatable
 {
     use HasFactory, HasApiTokens;
 
+    protected $appends = ['total_points', 'used_points', 'current_points'];
+
+
     protected $fillable = [
         'name',
         'email',
@@ -69,5 +72,28 @@ class AppUser extends Authenticatable
     public function pointUsages()
     {
         return $this->hasMany(PointUsage::class);
+    }
+
+    public function userPoints()
+    {
+        return $this->hasMany(UserPoint::class);
+    }
+
+    // Calculate used points
+    public function getUsedPointsAttribute()
+    {
+        return $this->pointUsages()->sum('points') ?? 0;
+    }
+
+    // Calculate total points
+    public function getTotalPointsAttribute()
+    {
+        return $this->userPoints()->sum('points') ??0;
+    }
+
+    // Calculate current points
+    public function getCurrentPointsAttribute()
+    {
+        return $this->points - $this->getUsedPointsAttribute() ?? 0;
     }
 }

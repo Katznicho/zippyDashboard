@@ -58,6 +58,8 @@ Route::prefix('app-user')->group(function () {
 
         Route::post("checkIfPropertyLikedByUser", [AppUserController::class, "checkIfPropertyLiked"]);
 
+        Route::post("loadPoints", [AppUserController::class, "loadPoints"]);
+
         // Route::post('setUpUserWalletAccount', [AuthController::class, 'setUpUserWalletAccount']);
         // Route::post('updateShowWalletBalance', [AuthController::class, 'updateShowWalletBalance']);
         // Route::post('changeCustomerPin', [AuthController::class, 'changeCustomerPin']);

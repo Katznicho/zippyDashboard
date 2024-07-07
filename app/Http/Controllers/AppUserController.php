@@ -17,6 +17,7 @@ use App\Models\PropertyNotification;
 use App\Models\User;
 use App\Models\UserAccount;
 use App\Models\UserDevice;
+use App\Models\UserPoint;
 use App\Models\ZippyAlert;
 use App\Payments\Pesapal;
 use App\Traits\AppUserTrait;
@@ -290,7 +291,7 @@ class AppUserController extends Controller
 
             return response()->json(['response' => 'success', 'message' => 'User details updated successfully.']);
         } catch (Throwable $th) {
-            Log::error('Update user details failed: ' . $th->getMessage());
+            // Log::error('Update user details failed: ' . $th->getMessage());
             return response()->json(['response' => 'failure', 'message' => $th->getMessage()]);
         }
     }
@@ -381,20 +382,59 @@ class AppUserController extends Controller
     }
 
     //here
-    public function getUserPoints(Request $request)
-    {
-        try {
+    // public function getUserPoints(Request $request)
+    // {
+    //     try {
 
-            // $user_id =  $this->getCurrentLoggedUserBySanctum()->id;
-            $user_id =  $this->getCurrentLoggedAppUserBySanctum()->id;
-            $user = AppUser::with([
-                'pointUsages'
-            ])->find($user_id);
-            return response()->json(['data' => $user, 'response' => 'success', 'message' => 'User Points fetched successfully.']);
-        } catch (\Throwable $th) {
-            return response()->json(['response' => 'failure', 'message' => $th->getMessage()]);
+    //         // $user_id =  $this->getCurrentLoggedUserBySanctum()->id;
+    //         $user_id =  $this->getCurrentLoggedAppUserBySanctum()->id;
+    //         $user = AppUser::with([
+    //             'pointUsages',
+    //             'userPoints'
+    //         ])->find($user_id);
+    //         return response()->json(['data' => $user, 'response' => 'success', 'message' => 'User Points fetched successfully.']);
+    //     } catch (\Throwable $th) {
+    //         return response()->json(['response' => 'failure', 'message' => $th->getMessage()]);
+    //     }
+    // }
+
+    public function getUserPoints(Request $request)
+{
+    try {
+        $user_id =  $this->getCurrentLoggedAppUserBySanctum()->id;
+        $user = AppUser::with([
+            'pointUsages',
+            'userPoints'
+        ])->find($user_id);
+
+        if ($user) {
+            // Ensure the custom attributes are loaded
+            $user->load('pointUsages', 'userPoints');
+
+            return response()->json([
+                'data' => [
+                    'user' => $user,
+                    'total_points' => $user->total_points,
+                    'used_points' => $user->used_points,
+                    'current_points' => $user->current_points,
+                ],
+                'response' => 'success',
+                'message' => 'User Points fetched successfully.'
+            ]);
+        } else {
+            return response()->json([
+                'response' => 'failure',
+                'message' => 'User not found.'
+            ]);
         }
+    } catch (\Throwable $th) {
+        return response()->json([
+            'response' => 'failure',
+            'message' => $th->getMessage()
+        ]);
     }
+}
+
 
     public function fetchUserPointsUsages(Request $request)
     {
@@ -433,7 +473,7 @@ class AppUserController extends Controller
             if ($total_alerts > 4) {
                 return response()->json(['response' => 'failure', 'alert_max' => true, 'message' => "You have reached the maximum number of alerts. You can only have up to 4 alerts."]);
             }
-            $user = User::find($user_id);
+            $user = AppUser::find($user_id);
 
             $request->validate([
                 //'services' => 'required|array',
@@ -647,17 +687,84 @@ class AppUserController extends Controller
                 
                 // return $payment_type;
                 // return $amount;
-                $data = Pesapal::orderProcess($reference, $amount, $phone, $description, $callback, $first_name, $email, $second_name, $cancel_url, $payment_type, 'App', );
+                $data = Pesapal::orderProcess($reference, $amount, $phone, $description, $callback, $first_name, $email, $second_name, $cancel_url, $payment_type, 'App');
+                if ($data->success) {
+                    return response()->json(['success' => true, 'message' => 'Booking created successfully.', 'data'=> $data->message->redirect_url ]);
+                } else {
+                    //return redirect()->back()->with('error', 'Payment Failed please try again');
+                    return response()->json(['success' => false, 'message' => "Payment Failed please try again"]);
+                }
                 
     
-                return response()->json(['success' => true, 'message' => 'Order processed successfully', 'response' => $data]);
+                // return response()->json(['success' => true, 'message' => 'Order processed successfully', 'response' => $data]);
 
-                return response()->json(['success' => true, 'message' => 'Booking created successfully.']);
+                // return response()->json(['success' => true, 'message' => 'Booking created successfully.']);
             }
 
             return response()->json(['success' => true, 'data' => $res, 'message' => 'Booking created successfully.']);
         } catch (\Throwable $th) {
             //throw $th;
+            return response()->json(['success' => false, 'message' => $th->getMessage()]);
+        }
+    }
+
+    public function loadPoints(Request $request){
+        try {
+            $request->validate([
+                'amount' => 'required',
+                'points' => 'required',
+                'phone_number' => 'required',
+            ]);
+            $user_id =  $this->getCurrentLoggedAppUserBySanctum()->id;
+            $user =  AppUser::find($user_id);
+            $reference = Str::uuid();
+            $res =  Payment::create([
+            'reference' => $reference,
+            'amount' => $request->amount,
+            'type' => "Points",
+            'user_id' => $user_id,
+            'payment_mode' => "App",
+            'reference' => $reference,
+            'status' => config('status.payment_status.pending'),
+            'phone_number' => $request->phone_number,
+            'description' => "Payment for a property booking",    
+            ]);
+            if(!$res){
+                return response()->json(['success' => false, 'message' => 'Something went wrong.']);
+            }
+            UserPoint::create([
+                'app_user_id' => $user_id,
+                'points' => $request->points,
+                'payment_id' => $res->id,
+                'status' => 'pending',
+                'description' => $request->reason ?? "Payment for a property points",
+                'reference' => $reference
+            ]);
+
+            //create a payment
+               $amount =  500;
+                $phone = $user->phone_number;
+                $callback = "https://dashboard.zippyug.com/finishPayment";
+                //$reference = Str::uuid();
+                $reference = $reference;
+                $description = $request->reason ?? "Payment for a property points";
+                $names = explode(" ", $user->name);
+                $first_name = $names[0];
+                $second_name = $names[1];
+                $email = $user->email;
+                $cancel_url = "https://dashboard.zippyug.com/cancelPayment" . '?payment_reference=' . $reference;
+                $payment_type = "Points";
+
+                $data = Pesapal::orderProcess($reference, $amount, $phone, $description, $callback, $first_name, $email, $second_name, $cancel_url, $payment_type, 'App');
+                if ($data->success) {
+                    return response()->json(['success' => true, 'message' => 'Points created successfully.', 'data'=> $data->message->redirect_url ]);
+                } else {
+                    //return redirect()->back()->with('error', 'Payment Failed please try again');
+                    return response()->json(['success' => false, 'message' => "Payment Failed please try again"]);
+                }
+
+        }
+        catch(\Throwable $th){
             return response()->json(['success' => false, 'message' => $th->getMessage()]);
         }
     }
@@ -918,7 +1025,7 @@ class AppUserController extends Controller
              ]);
             $user = $this->getCurrentLoggedAppUserBySanctum();
             $user->name = $request->name;
-            $user->save();
+            //$user->save();
             return response()->json(['success' => true, 'message' => 'Profile updated successfully.']);
         } catch (\Throwable $th) {
             return response()->json(['success' => false, 'message' => $th->getMessage()]);

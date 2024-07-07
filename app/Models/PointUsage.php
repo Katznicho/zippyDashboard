@@ -16,6 +16,7 @@ class PointUsage extends Model
         'property_notification_id',
         'points',
         'reason',
+        'app_user_id'
     ];
 
     //
@@ -37,5 +38,10 @@ class PointUsage extends Model
     public function propertyNotification()
     {
         return $this->belongsTo(PropertyNotification::class);
+    }
+
+    public function appUser()
+    {
+        return $this->belongsTo(AppUser::class);
     }
 }

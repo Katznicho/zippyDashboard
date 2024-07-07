@@ -49,7 +49,7 @@ trait ZippyAlertTrait
 
     protected $threshold = 0.7;
 
-    public function zippySearchAlgorithm(Request $request, User $user)
+    public function zippySearchAlgorithm(Request $request, $user)
     {
 
         try {
@@ -100,7 +100,7 @@ trait ZippyAlertTrait
 
                     // Send message to the user
                     $notiification = Notification::create([
-                        'user_id' => $user->id,
+                        'app_user_id' => $user->id,
                         'property_id' => $property->id,
                         'title' => "Property Zippy Alert",
                         'message' => "Hello " . $user->name . ",\n\n" . "Your Zippy Alert has been triggered.\n\n" . "Regards,\n" . "Zippy Team",
@@ -108,7 +108,7 @@ trait ZippyAlertTrait
                     //create a property notification
                     PropertyNotification::create([
                         'property_id' => $property->id,
-                        'user_id' => $user->id,
+                        'app_user_id' => $user->id,
                         'score' => $score,
                         'match_percentage' => $score,
                         'notification_id' => $notiification->id,
