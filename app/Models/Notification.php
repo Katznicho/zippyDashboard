@@ -18,7 +18,8 @@ class Notification extends Model
         'property_id',
         'type',
         'message',
-        'app_user_id'
+        'app_user_id',
+        'type'
         
     ];
 

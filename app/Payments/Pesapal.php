@@ -132,7 +132,7 @@ class Pesapal
                 'redirect_mode' => 'PARENT_WINDOW',
                 'callback_url' => $callback,
                 'call_back_url' => $cancel_url,
-                'notification_id' => '87564655-8bf0-4a7e-9b6e-dd628ff94291',
+                'notification_id' => 'e8c50bc5-4181-4058-9bfc-dd042678045e',
                 'billing_address' => [
                     'phone_number' => $phone,
                     'first_name' => $first_name,

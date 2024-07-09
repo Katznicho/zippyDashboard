@@ -15,21 +15,25 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Throwable;
 use App\Mail\Payment as MailPayment;
+use App\Models\AppUser;
+use App\Models\Booking;
 use App\Models\UserAccount;
 use App\Models\UserPoint;
 use App\Models\Donation;
+use App\Models\Notification;
 
 class PaymentController extends Controller
 {
-    use MessageTrait, UserTrait;
+    use MessageTrait, UserTrait, MessageTrait;
     //
-    public function sendMessageTest(Request $request){
+    public function sendMessageTest(Request $request)
+    {
         try {
-            
-             $phone = '256759983853';
-             $message = "This is a test message from zippy";
-             $this->sendMessage($phone, $message);
-             return "Message sent successfully";
+
+            $phone = '256759983853';
+            $message = "This is a test message from zippy";
+            $this->sendMessage($phone, $message);
+            return "Message sent successfully";
         } catch (\Throwable $th) {
             //throw $th;
             return $th->getMessage();
@@ -55,7 +59,7 @@ class PaymentController extends Controller
             // );
 
             // UserPoint::where("reference", $transaction->reference)->update([
-                
+
             // ]);
             try {
                 Mail::to($customer->email)->send(new MailPayment($customer, 'Your Donation Has Been Successfully Completed', 'Donation Completed'));
@@ -98,98 +102,56 @@ class PaymentController extends Controller
     //
     private function finishPaymentAndSendEmailByJSON(Payment $transaction, $customer)
     {
-        if ($transaction->type == "LoadPoints") {
+        if ($transaction->type == "Points") {
             UserPoint::where("reference", $transaction->reference)->update([
                 'status' => config('status.payment_status.completed'),
-                'payment_id' => $transaction->id,
-            ]);
-            //update the payment with the donation id
-            $points = UserPoint::where("reference", $transaction->reference)->first();
-            //increment the user points
-            $user = User::where('id', $customer->id)->first();
-            User::where('id', $customer->id)->update([
-                'points' => $user->points + $points->points,
-                'current_points' => $user->current_points + $points->points,
-            ]);
-            try {
-                Mail::to($customer->email)->send(new MailPayment($customer, 'Your Payment Has Been Successfully Completed', 'Payment Completed'));
-            } catch (Throwable $th) {
-                // throw $th;
-                Log::error($th);
-            }
-
-
-            // return view('payments.finish');
-            return response()->json([
-                'status' => 200,
-                'message' => 'Transaction completed',
+                //'payment_id' => $transaction->id,
             ]);
         }
+        else{
+            //booking payment
+            Booking::where("reference", $transaction->reference)->update([
+                'status' => config('status.payment_status.completed'),
+                'is_approved'=>1
+            ]);
+        }
+
+        $message = "Your Payment Has Been Successfully Completed Please check the app for more details. Thanks Zippy Team";
+        if($customer->phone_number){
+            $this->sendMessage($customer->phone_number, $message);
+        }
+
+        if($customer->email){
+
+        try {
+            Mail::to($customer->email)->send(new MailPayment($customer, $message, 'Payment Completed'));
+        } catch (Throwable $th) {
+            // throw $th;
+            Log::error($th);
+        }
+
+        }
+        Notification::create([
+            'app_user_id' => $customer->id,
+            'type'=>$transaction->type,
+            'title'=>"Payment for $transaction->type completed",
+            'message'=>"Payment for $transaction->type completed",
+        ]);
+        // return view('payments.finish');
+        return response()->json([
+            'status' => 200,
+            'message' => 'Transaction completed',
+        ]);
     }
 
     public function finishPayment(Request $request)
     {
         try {
             //code...
-            $orderTrackingId = $request->input('OrderTrackingId');
-            $reference = $request->input('OrderMerchantReference');
-
-            Payment::where('reference', $reference)->update([
-                'order_tracking_id' => $orderTrackingId,
-
-            ]);
-            //get the actual transaction
-            $transaction = Payment::where('reference', $reference)->first();
-            if (!$transaction) {
-                Log::error('Transaction does not exist');
-
-                return view('payments.cancel');
-            }
-            $customer = User::find($transaction->user_id);
-            $data = Pesapal::transactionStatus($orderTrackingId, $orderTrackingId);
-            $payment_method = $data->message->payment_method;
-
-            if ($data->message->payment_status_description == config('status.payment_status.completed')) {
-                $message = "Hello {$customer->name} your payment of {$transaction->amount} has been successfully completed.Thank you";
-
-                //check if the transaction is already completed
-                if ($transaction->status == config('status.payment_status.completed')) {
-
-                    // return $this->finishPaymentAndSendEmailByView($transaction, $customer);
-                    return view('payments.finish');
-                } else {
-                    $transaction->update([
-                        'status' => config('status.payment_status.completed'),
-                        'payment_method' => $payment_method,
-                    ]);
-
-
-
-                    // return $this->finishPaymentAndSendEmailByView($transaction, $customer);
-                    // return view('payments.cancel');
-                    return view('payments.finish');
-                }
-
-                // $this->sendMessage($)
-
-            } else {
-                $transaction->update([
-                    'status' => config('status.payment_status.failed'),
-                ]);
-                try {
-                    Mail::to($customer->email)->send(new MailPayment($customer, 'Your Payment Failed', 'Payment Failed'));
-                } catch (Throwable $th) {
-                    // throw $th;
-                    Log::error($th);
-                }
-
-                return view('payments.cancel');
-            }
+            return view('payments.finish');
         } catch (\Throwable $th) {
             //throw $th;
-            Log::error($th->getMessage());
-
-            return view('payments.finish');
+            return view('payments.cancel');
         }
     }
 
@@ -263,7 +225,7 @@ class PaymentController extends Controller
                     'message' => 'Transaction not found',
                 ]);
             }
-            $customer = User::find($transaction->user_id);
+            $customer = AppUser::find($transaction->app_user_id);
             $data = Pesapal::transactionStatus($orderTrackingId, $orderTrackingId);
             $payment_method = $data->message->payment_method;
 
@@ -276,10 +238,10 @@ class PaymentController extends Controller
                 //check if the transaction is already completed
                 if ($transaction->status == config('status.payment_status.completed')) {
                     return response()->json([
-                'status' => 200,
-                'message' => 'Transaction completed',
-            ]);
-                     
+                        'status' => 200,
+                        'message' => 'Transaction completed',
+                    ]);
+
                     //return $this->finishPaymentAndSendEmailByJson($transaction, $customer);
                 } else {
 
@@ -291,6 +253,14 @@ class PaymentController extends Controller
                     return $this->finishPaymentAndSendEmailByJson($transaction, $customer);
                 }
             }
+            else{
+               //fail the transactin
+               $transaction->update([
+                   'status' => config('status.payment_status.failed'),
+                   'payment_method' => $payment_method,
+               ]);
+                return response()->json(['success' => false, 'message' => 'Transaction failed', 'status' => 500]);
+            }
         } catch (\Throwable $th) {
 
             Log::info('===========callback url==================================');
@@ -301,7 +271,7 @@ class PaymentController extends Controller
         }
     }
 
-    public function processOrder(Request $request, $amount , $phone ,$re)
+    public function processOrder(Request $request, $amount, $phone, $re)
     {
 
 
@@ -339,7 +309,7 @@ class PaymentController extends Controller
             // return $payment_type;
             // return $amount;
             $data = Pesapal::orderProcess($reference, $amount, $phone, $description, $callback, $first_name, $email, $second_name, $cancel_url, $payment_type, 'App', $product_id);
-            
+
 
             return response()->json(['success' => true, 'message' => 'Order processed successfully', 'response' => $data]);
         } catch (\Throwable $th) {

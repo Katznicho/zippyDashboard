@@ -7,9 +7,14 @@ use App\Models\Property;
 use App\Models\PropertyNotification;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+use Throwable;
+use App\Mail\Payment as MailNotfication;
 
 trait ZippyAlertTrait
 {
+    use MessageTrait;
 
     /**
      * @var float The cost percentage
@@ -49,7 +54,7 @@ trait ZippyAlertTrait
 
     protected $threshold = 0.7;
 
-    public function zippySearchAlgorithm(Request $request, $user)
+    public function zippySearchAlgorithm(Request $request, $user, $userAlert)
     {
 
         try {
@@ -97,13 +102,15 @@ trait ZippyAlertTrait
 
                 // Check if the overall score exceeds the threshold
                 if ($score >= 0.7) {
-
+                     $matchScore = floatval($score ) * 100.0;
+                      $message = "Hello " . $user->name . ",\n\n"  . "$property->name matches with your Zippy Alert with score $matchScore.\n\n" . "Regards,\n" . "Zippy Team";
                     // Send message to the user
                     $notiification = Notification::create([
                         'app_user_id' => $user->id,
                         'property_id' => $property->id,
+                        'type'=>'Property Notificaction',
                         'title' => "Property Zippy Alert",
-                        'message' => "Hello " . $user->name . ",\n\n" . "Your Zippy Alert has been triggered.\n\n" . "Regards,\n" . "Zippy Team",
+                        'message' => "$property->name matches with your Zippy Alert with score $matchScore",
                     ]);
                     //create a property notification
                     PropertyNotification::create([
@@ -118,9 +125,26 @@ trait ZippyAlertTrait
                         'services_percentage' => $servicesPercentage,
                         'amenities_percentage' => $amenitiesPercentage,
                         'rooms_percentage' => $roomPecentage,
-                        'bathrooms_percentage' => $bathroomsPercentage
-
+                        'bathrooms_percentage' => $bathroomsPercentage,
+                        'zippy_alert_id' => $userAlert->id,
                     ]);
+
+                    //de-activate zippy alert
+                    $userAlert->is_active = false;
+                    $userAlert->save();
+
+                    //notify user
+                    if($user->phone_number){
+                        $this->sendMessage($user->phone_number, $message);
+                    }
+                    try {
+                        Mail::to($user->email)->send(new MailNotfication($user, $message, 'Property Match'));
+                    } catch (Throwable $th) {
+                        // throw $th;
+                        Log::error($th);
+                    }
+                    //notify user
+
                     return true;
                 } else {
                     return false;
@@ -277,4 +301,7 @@ trait ZippyAlertTrait
             return 0; // No match
         }
     }
+
+
+    
 }

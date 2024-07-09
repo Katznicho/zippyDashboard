@@ -11,6 +11,7 @@ use App\Models\AppUser;
 use App\Models\Booking;
 use App\Models\Comment;
 use App\Models\Likes;
+use App\Models\Notification;
 use App\Models\Payment;
 use App\Models\PointUsage;
 use App\Models\PropertyNotification;
@@ -487,9 +488,6 @@ class AppUserController extends Controller
                 //'latitude' => 'required',
                 //'address' => 'required',
             ]);
-
-            $this->zippySearchAlgorithm($request, $user);
-
             $userAlert =  ZippyAlert::create([
                 'app_user_id' => $user_id,
                 'category_id' => $request->category_id,
@@ -505,10 +503,9 @@ class AppUserController extends Controller
                 'address' => $request->address
             ]);
 
-            $message = "Hello " . $user->name . ",\n\n"  . "Your Zippy Alert has been created.\n\n" . "Regards,\n" . "Zippy Team";
-            // if ($user->phone_number) {
-            //     $this->sendMessage($user->phone_number, $message);
-            // }
+            $this->zippySearchAlgorithm($request, $user, $userAlert);
+
+            
 
             return response()->json(['response' => 'success', 'message' => 'Property Alert created successfully.']);
         } catch (\Throwable $th) {
@@ -580,7 +577,7 @@ class AppUserController extends Controller
 
             // Add a status filter if 'status' is provided in the request
             $status = $request->input('status');
-            $paymentQuery = PropertyNotification::where('app_user_id', $user_id);
+            $paymentQuery = Notification::where('app_user_id', $user_id);
 
             if (!empty($status)) {
                 $paymentQuery->where('status', $status);
@@ -646,7 +643,7 @@ class AppUserController extends Controller
             'reference' => $reference,
             'amount' => $request->total_price,
             'type' => "Booking",
-            'user_id' => $user_id,
+            'app_user_id' => $user_id,
             'payment_mode' => "App",
             'reference' => $reference,
             'status' => config('status.payment_status.pending'),
@@ -722,12 +719,12 @@ class AppUserController extends Controller
             'reference' => $reference,
             'amount' => $request->amount,
             'type' => "Points",
-            'user_id' => $user_id,
+            'app_user_id' => $user_id,
             'payment_mode' => "App",
             'reference' => $reference,
             'status' => config('status.payment_status.pending'),
             'phone_number' => $request->phone_number,
-            'description' => "Payment for a property booking",    
+            'description' => "Payment for a property points",    
             ]);
             if(!$res){
                 return response()->json(['success' => false, 'message' => 'Something went wrong.']);

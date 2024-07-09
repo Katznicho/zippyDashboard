@@ -3,15 +3,13 @@
 return [
     'payment_status' => [
         'completed' => 'Completed',
-        'canceled' => 'Canceled',
+        'cancelled' => 'Canceled',
         'failed' => 'Failed',
         'pending' => 'Pending',
     ],
     'payment_type' => [
-        'Donation' => 'Donation',
-        'Product' => 'Product',
-        'Wallet' => 'Wallet',
-        'Other' => 'Other',
+        'Booking' => 'Booking',
+        'Points' => 'Points',
     ],
 
 ];

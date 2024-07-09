@@ -20,7 +20,8 @@ class Payment extends Model
         'description',
         'reference',
         'status',
-        'property_id'
+        'property_id',
+       'app_user_id',
     ];
 
 
@@ -33,5 +34,15 @@ class Payment extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function property()
+    {
+        return $this->belongsTo(Property::class);
+    }
+
+    public function appUser()
+    {
+        return $this->belongsTo(AppUser::class);
     }
 }
