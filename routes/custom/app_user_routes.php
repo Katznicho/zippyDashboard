@@ -24,6 +24,8 @@ Route::prefix('app-user')->group(function () {
         Route::post("updateUserDetails", [AppUserController::class, 'updateUserDetails']);
         Route::post("logout", [AppUserController::class, 'logout']);
 
+        Route::post('saveDeviceInfo', [AppUserController::class, 'saveDeviceInfo']);
+
         //app user
 
 
@@ -46,7 +48,7 @@ Route::prefix('app-user')->group(function () {
         Route::post("createUserBooking", [AppUserController::class, "createUserBooking"]);
         Route::get("getUserBookings", [AppUserController::class, "getUserBookings"]);
         //more routes
-        Route::get('getUserPayments', [PaymentController::class, 'getUserPayments']);
+        Route::get('getUserPayments', [AppUserController::class, 'getUserPayments']);
        
         Route::post("likeProperty", [AppUserController::class, "likeProperty"]);
         Route::post("dislikeProperty", [AppUserController::class, "dislikeProperty"]);
@@ -71,6 +73,7 @@ Route::prefix('app-user')->group(function () {
         // Route::post('hasWalletAccount', [AuthController::class, 'hasWalletAccount']);
         // Route::post('updateUserAvatarUrl', [AuthController::class, 'updateUserAvatarUrl']);
         // Route::post("resetPasswordFirstUser", [AuthController::class, 'resetPasswordFirstUser']);
-        // Route::post('updateUserLocation', [AuthController::class, 'updateUserLocation']);
+
+        Route::post('updateUserLocation', [AppUserController::class, 'updateUserLocation']);
     });
 });

@@ -21,7 +21,9 @@ Route::prefix('auth')->group(function () {
         Route::post('logout', [AuthController::class, 'logout']);
         Route::post('changePassword', [AuthController::class, 'changePassword']);
         Route::post('updateAvatar', [AuthController::class, 'updateAvatar']);
+        
         Route::post('saveDeviceInfo', [AuthController::class, 'saveDeviceInfo']);
+
         Route::post('hasWalletAccount', [AuthController::class, 'hasWalletAccount']);
         Route::post('updateUserAvatarUrl', [AuthController::class, 'updateUserAvatarUrl']);
         Route::post("resetPasswordFirstUser", [AuthController::class, 'resetPasswordFirstUser']);
