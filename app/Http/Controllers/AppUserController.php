@@ -566,66 +566,126 @@ class AppUserController extends Controller
         }
     }
 
+    // public function getUserNotifications(Request $request)
+    // {
+    //     try {
+    //         $limit = $request->input('limit', 100);
+    //         $page = $request->input('page', 1);
+    //         $sortOrder = $request->input('sort_order', 'desc');
+    //         // $user_id = $this->getCurrentLoggedUserBySanctum()->id;
+    //         $user_id =  $this->getCurrentLoggedAppUserBySanctum()->id;
+
+    //         // Add a status filter if 'status' is provided in the request
+    //         //$status = $request->input('status');
+    //         $paymentQuery = Notification::where('app_user_id', $user_id);
+
+    //         // if (!empty($status)) {
+    //         //     $paymentQuery->where('status', $status);
+    //         // }
+
+    //         $res = $paymentQuery->orderBy('id', $sortOrder)->with([
+    //             'user', 'property', 'appUser'
+    //         ])->paginate($limit, ['*'], 'page', $page);
+
+    //         $response = [
+    //             'data' => $res->items(),
+    //             'pagination' => [
+    //                 'current_page' => $res->currentPage(),
+    //                 'per_page' => $limit,
+    //                 'total' => $res->total(),
+    //             ],
+    //         ];
+
+    //         return response()->json(['success' => true, 'data' => $response]);
+    //     } catch (\Throwable $th) {
+    //         return response()->json(['success' => false, 'message' => $th->getMessage()]);
+    //     }
+    // }
+
+
     public function getUserNotifications(Request $request)
-    {
-        try {
-            $limit = $request->input('limit', 100);
-            $page = $request->input('page', 1);
-            $sortOrder = $request->input('sort_order', 'desc');
-            // $user_id = $this->getCurrentLoggedUserBySanctum()->id;
-            $user_id =  $this->getCurrentLoggedAppUserBySanctum()->id;
+{
+    try {
+        $limit = $request->input('limit', 100);
+        $page = $request->input('page', 1);
+        $sortOrder = $request->input('sort_order', 'desc');
+        $user_id = $this->getCurrentLoggedAppUserBySanctum()->id;
 
-            // Add a status filter if 'status' is provided in the request
-            $status = $request->input('status');
-            $paymentQuery = Notification::where('app_user_id', $user_id);
+        $notificationQuery = Notification::where('app_user_id', $user_id);
 
-            if (!empty($status)) {
-                $paymentQuery->where('status', $status);
-            }
-
-            $res = $paymentQuery->orderBy('id', $sortOrder)->with([
-                'user', 'property', 'appUser'
+        $res = $notificationQuery->orderBy('id', $sortOrder)
+            ->with([
+                'user',
+                'property.agent',
+                'property.owner',
+                'property.services',
+                'property.amenities',
+                'property.category',
+                'property.amenityProperties',
+                'property.propertyServices',
+                'property.paymentPeriod',
+                'property.status',
+                'property.currency',
+                'appUser'
             ])->paginate($limit, ['*'], 'page', $page);
 
-            $response = [
-                'data' => $res->items(),
-                'pagination' => [
-                    'current_page' => $res->currentPage(),
-                    'per_page' => $limit,
-                    'total' => $res->total(),
-                ],
-            ];
+        $response = [
+            'data' => $res->items(),
+            'pagination' => [
+                'current_page' => $res->currentPage(),
+                'per_page' => $limit,
+                'total' => $res->total(),
+            ],
+        ];
 
-            return response()->json(['success' => true, 'data' => $response]);
-        } catch (\Throwable $th) {
-            return response()->json(['success' => false, 'message' => $th->getMessage()]);
-        }
+        return response()->json(['success' => true, 'data' => $response]);
+    } catch (\Throwable $th) {
+        return response()->json(['success' => false, 'message' => $th->getMessage()]);
     }
+}
 
-    public function  getUserLikes(Request $request){
-        try {
-            $limit = $request->input('limit', 100);
-            $page = $request->input('page', 1);
-            $sortOrder = $request->input('sort_order', 'desc');
-            // $user_id = $this->getCurrentLoggedUserBySanctum()->id;
-            $user_id =  $this->getCurrentLoggedAppUserBySanctum()->id;
-            $res = Likes::where('app_user_id', $user_id)->where('is_like', true)->orderBy('id', $sortOrder)->with([
-                'user', 'property', 'appUser'
+
+public function getUserLikes(Request $request)
+{
+    try {
+        $limit = $request->input('limit', 100);
+        $page = $request->input('page', 1);
+        $sortOrder = $request->input('sort_order', 'desc');
+        $user_id = $this->getCurrentLoggedAppUserBySanctum()->id;
+
+        $res = Likes::where('app_user_id', $user_id)
+            ->where('is_like', true)
+            ->orderBy('id', $sortOrder)
+            ->with([
+                'user',
+                'property.agent',
+                'property.owner',
+                'property.services',
+                'property.amenities',
+                'property.category',
+                'property.amenityProperties',
+                'property.propertyServices',
+                'property.paymentPeriod',
+                'property.status',
+                'property.currency',
+                'appUser'
             ])->paginate($limit, ['*'], 'page', $page);
-            $response = [
-                'data' => $res->items(),
-                'pagination' => [
-                    'current_page' => $res->currentPage(),
-                    'per_page' => $limit,
-                    'total' => $res->total(),
-                ],
-            ];
-            return response()->json(['success' => true, 'data' => $response]);   
-        }
-        catch (\Throwable $th) {
-            return response()->json(['success' => false, 'message' => $th->getMessage()]);
-        }
+
+        $response = [
+            'data' => $res->items(),
+            'pagination' => [
+                'current_page' => $res->currentPage(),
+                'per_page' => $limit,
+                'total' => $res->total(),
+            ],
+        ];
+
+        return response()->json(['success' => true, 'data' => $response]);   
+    } catch (\Throwable $th) {
+        return response()->json(['success' => false, 'message' => $th->getMessage()]);
     }
+}
+
 
 
     public function createUserBooking(Request $request)
@@ -802,6 +862,10 @@ class AppUserController extends Controller
             $sortOrder = $request->input('sort_order', 'desc');
             // $user_id = $this->getCurrentLoggedUserBySanctum()->id;
             $user_id =  $this->getCurrentLoggedAppUserBySanctum()->id;
+            
+
+            // $user =  AppUser::find($user_id);
+            // return $user;
 
             // Add a status filter if 'status' is provided in the request
             $status = $request->input('status');
@@ -812,11 +876,10 @@ class AppUserController extends Controller
             }
 
             $res = $paymentQuery->orderBy('id', $sortOrder)->with([
-                'station',
-                'currency',
-                'customerCard',
-                'order',
+                'appUser',
+                'property',
                 'user',
+                'booking'
             ])->paginate($limit, ['*'], 'page', $page);
 
             $response = [
@@ -1028,4 +1091,80 @@ class AppUserController extends Controller
             return response()->json(['success' => false, 'message' => $th->getMessage()]);
         }
     }
+
+    public function updateUserLocation(Request $request)
+    {
+        try {
+            $request->validate([
+                'lat' => 'required|string|max:255',
+                'long' => 'required|string|max:255',
+            ]);
+            // $user = $this->getCurrentLoggedUserBySanctum();
+            $user = $this->getCurrentLoggedAppUserBySanctum();
+            AppUser::find($user->id)->update(
+                ['lat' => $request->lat, 'long' => $request->long]
+            );
+
+            return response()->json(['response' => 'success', 'message' => 'Location updated successfully.']);
+        } catch (\Throwable $th) {
+            return response()->json(['response' => 'failure', 'message' => $th->getMessage()]);
+        }
+    }
+
+    //save device info
+    public function saveDeviceInfo(Request $request)
+    {
+        $request->validate([
+            'push_token' => 'required|string|max:255',
+            'device_id' => 'required|string|max:255',
+            'device_model' => 'required|string|max:255',
+            'device_manufacturer' => 'required|string|max:255',
+            'app_version' => 'required|string|max:255',
+            'device_os' => 'required|string|max:255',
+            'device_os_version' => 'required|string|max:255',
+            'device_user_agent' => 'required|string|max:255',
+            'device_type' => 'required|string|max:255',
+        ]);
+
+
+
+        $user = $this->getCurrentLoggedAppUserBySanctum();
+
+        // Check this info is already saved or not
+        $userDevice = UserDevice::where('app_user_id', $user->id)
+            ->where('device_id', $request->device_id)
+            ->first();
+
+        if ($userDevice) {
+            $userDevice->update([
+                'push_token' => $request->push_token,
+                'device_model' => $request->device_model,
+                'device_manufacturer' => $request->device_manufacturer,
+                'app_version' => $request->app_version,
+                'device_os' => $request->device_os,
+                'device_os_version' => $request->device_os_version,
+                'device_user_agent' => $request->device_user_agent,
+                'device_type' => $request->device_type,
+            ]);
+
+            return response()->json(['response' => 'success', 'message' => 'Device token updated successfully.']);
+        }
+
+        // Save device token
+        UserDevice::create([
+            'app_user_id' => $user->id,
+            'push_token' => $request->push_token,
+            'device_id' => $request->device_id,
+            'device_model' => $request->device_model,
+            'device_manufacturer' => $request->device_manufacturer,
+            'app_version' => $request->app_version,
+            'device_os' => $request->device_os,
+            'device_os_version' => $request->device_os_version,
+            'device_user_agent' => $request->device_user_agent,
+            'device_type' => $request->device_type,
+        ]);
+
+        return response()->json(['response' => 'success', 'message' => 'Device token saved successfully.']);
+    }
+    //save device info
 }

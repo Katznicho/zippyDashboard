@@ -19,7 +19,8 @@ class Notification extends Model
         'type',
         'message',
         'app_user_id',
-        'type'
+        'type',
+
         
     ];
 
@@ -32,6 +33,11 @@ class Notification extends Model
     public function appUser(){
 
         return $this->belongsTo(AppUser::class);
+    }
+
+    public function property()
+    {
+        return $this->belongsTo(Property::class);
     }
 
     

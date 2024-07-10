@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PaymentController;
 use Illuminate\Support\Facades\Route;
 
@@ -25,4 +26,6 @@ Route::prefix('v1')->group(function () {
     include_once __DIR__ . '/custom/app_user_routes.php';
 });
 
-Route::get("sendMessage", [PaymentController::class, 'sendMessageTest'])->name('sendMessage');
+//Route::get("sendMessage", [PaymentController::class, 'sendMessageTest'])->name('sendMessage');
+
+Route::get("test-push", [NotificationController::class,"sendNotification"]);

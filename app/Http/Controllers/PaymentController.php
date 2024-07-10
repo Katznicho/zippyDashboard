@@ -21,11 +21,20 @@ use App\Models\UserAccount;
 use App\Models\UserPoint;
 use App\Models\Donation;
 use App\Models\Notification;
+use App\Models\UserDevice;
+use App\Services\FirebaseService;
 
 class PaymentController extends Controller
 {
     use MessageTrait, UserTrait, MessageTrait;
-    //
+    
+    protected $firebaseService;
+
+    public function __construct(FirebaseService $firebaseService)
+    {
+        $this->firebaseService = $firebaseService;
+    }
+
     public function sendMessageTest(Request $request)
     {
         try {
@@ -137,6 +146,21 @@ class PaymentController extends Controller
             'title'=>"Payment for $transaction->type completed",
             'message'=>"Payment for $transaction->type completed",
         ]);
+        // Send push notification
+        $userPushToken = UserDevice::where('app_user_id', $customer->id)->first();
+        if ($userPushToken) {
+            $token = $userPushToken->push_token;
+            if ($token) {
+                $title = "🎉 Payment Completed 🎉";
+                $body = "Payment for $transaction->type has been successfully completed. ✅";
+                $data = [
+                    'transaction_type' => $transaction->type,
+                    'transaction_id' => $transaction->id,
+                ];
+
+                $this->firebaseService->sendNotification($token, $title, $body, null, $data);
+            }
+        }
         // return view('payments.finish');
         return response()->json([
             'status' => 200,
