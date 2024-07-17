@@ -98,13 +98,13 @@ class Property extends Model
     //belongs to agent
     public function agent()
     {
-        return $this->belongsTo(User::class, 'agent_id');
+        return $this->belongsTo(Agent::class, 'agent_id');
     }
 
     //belongs to owner
     public function owner()
     {
-        return $this->belongsTo(User::class, 'owner_id');
+        return $this->belongsTo(PropertyOwner::class, 'owner_id');
     }
 
     //property has a currency
