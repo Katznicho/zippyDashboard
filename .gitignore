@@ -1,3 +1,4 @@
 /vendor
 /storage
-/config/firebase
+# Google Cloud Service Account Credentials
+config/firebase/service_account.json
