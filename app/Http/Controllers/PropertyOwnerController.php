@@ -10,6 +10,7 @@ use App\Models\Service;
 use App\Traits\MessageTrait;
 use App\Traits\PropertyOwnerTrait;
 use App\Traits\UserTrait;
+use App\Models\Booking;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
@@ -365,6 +366,38 @@ class PropertyOwnerController extends Controller
             $user_id = auth('property_owner')->user()->id;
             $toal_properties = Property::where('owner_id', $user_id)->count();
             return response()->json(['response' => 'success', 'message' => 'Totals fetched successfully.', 'data' => ['total_properties' => $toal_properties]]);
+        } catch (\Throwable $th) {
+            //throw $th;
+            return response()->json(['success' => false, 'message' => $th->getMessage()]);
+        }
+    }
+
+    public function  getPropertyOwnerPropertyBookings(Request $request)
+    {
+        try {
+            //code...
+            $user_id =  $this->getCurrentLoggedAgentBySanctum()->id;
+            // $properties = Booking::where('agent_id', $user_id)->get();
+            $limit = $request->input('limit', 100);
+            $page = $request->input('page', 1);
+            $sortOrder = $request->input('sort_order', 'desc');
+            $properties = Booking::where('agent_id', $user_id)
+            ->orderBy('id', $sortOrder)
+            ->with(['property', 'user', 'owner', 'agent', 'payment'])
+            ->paginate($limit, ['*'], 'page', $page);
+
+            // return response()->json(['response' => 'success', 'message' => 'Properties fetched successfully.', 'data' => $properties]);
+            $response = [
+                "data" => $properties->items(),
+                "pagination" => [
+                    "total" => $properties->total(),
+                    "current_page" => $properties->currentPage(),
+                    "last_page" => $properties->lastPage(),
+                    "per_page" => $properties->perPage(),
+                ]
+                ];
+
+          return response()->json(['response' => "success", 'data' => $response], 200);
         } catch (\Throwable $th) {
             //throw $th;
             return response()->json(['success' => false, 'message' => $th->getMessage()]);

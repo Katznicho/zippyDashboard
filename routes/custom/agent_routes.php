@@ -38,7 +38,8 @@ Route::prefix('agent')->group(function () {
         Route::post("getAgentTotals", [AgentController::class, "getAgentTotals"]);
         //Route::post("")
         Route::get("getAllRegisteredPropertyOwners", [AgentController::class, "getAllRegisteredPropertyOwners"]); 
-        //agent
+        //
+        Route::get("getAgentPropertyBookings", [AgentController::class, "getAgentPropertyBookings"]);
     });
 
 

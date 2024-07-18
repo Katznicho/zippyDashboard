@@ -10,6 +10,7 @@ use App\Models\Agent;
 use App\Models\Property;
 use App\Models\PropertyOwner;
 use App\Models\User;
+use App\Models\Booking;
 use App\Models\UserAccount;
 use App\Models\UserDevice;
 use App\Traits\AgentTrait;
@@ -195,7 +196,7 @@ class AgentController extends Controller
     public function updateFirstUser(Request $request)
     {
         try {
-            $user_id =  $this->getCurrentLoggedUserBySanctum()->id;
+            $user_id =  $this->getCurrentLoggedAgentBySanctum()->id;
             $user = Agent::find($user_id)->update([
                 'is_new_user' => false
             ]);
@@ -374,7 +375,7 @@ class AgentController extends Controller
                 'confirm_new_password' => 'required|string|same:new_password',
             ]);
 
-            $user_id  = $this->getCurrentLoggedUserBySanctum()->id;
+            $user_id = $this->getCurrentLoggedAgentBySanctum()->id;
             $user = Agent::find($user_id);
             //update user password
             $user->password = Hash::make($request->new_password);
@@ -421,16 +422,16 @@ class AgentController extends Controller
         $request->validate([
             'pin' => 'required|string|min:4|max:4',
         ]);
-        $user = $this->getCurrentLoggedUserBySanctum();
+        $user = $this->getCurrentLoggedAgentBySanctum();
         if ($user) {
 
             //update or create wallet
             UserAccount::updateOrCreate(
 
-                ['user_id' => $user->id],
+                ['agent_id' => $user->id],
 
                 [
-                    'user_id' => $user->id,
+                    'agent_id' => $user->id,
                     'account_name' => $user->name,
                     'account_currency' => 'UGX',
                     'account_balance' => 0,
@@ -471,9 +472,9 @@ class AgentController extends Controller
     //check if user has a wallet account
     public function hasWalletAccount()
     {
-        $user = $this->getCurrentLoggedUserBySanctum();
+        $user = $this->getCurrentLoggedAgentBySanctum();
         if ($user) {
-            $wallet = UserAccount::where('user_id', $user->id)->first();
+            $wallet = UserAccount::where('agent_id', $user->id)->first();
             if ($wallet) {
                 return response()->json([
                     'response' => 'success',
@@ -503,7 +504,7 @@ class AgentController extends Controller
                 'show_wallet_balance' => 'required',
             ]);
             //check if pins match
-            $user = $this->getCurrentLoggedUserBySanctum();
+            $user = $this->getCurrentLoggedAgentBySanctum();
 
             if (!$user) {
                 return response()->json([
@@ -511,7 +512,7 @@ class AgentController extends Controller
                     'message' => 'User Not Found',
                 ], 401);
             } else {
-                $wallet = UserAccount::where('user_id', $user->id)->first();
+                $wallet = UserAccount::where('agent_id', $user->id)->first();
                 if (!$wallet) {
                     return response()->json([
                         'response' => 'success',
@@ -551,7 +552,7 @@ class AgentController extends Controller
                 'newPin' => 'required|string|min:4|max:4|confirmed',
             ]);
 
-            $user = $this->getCurrentLoggedUserBySanctum();
+            $user = $this->getCurrentLoggedAgentBySanctum();
 
             // Find the customer
             $customer = User::find($user->id);
@@ -584,10 +585,10 @@ class AgentController extends Controller
 
             //send them a push notification
             //send them a push notification
-            $device_token = UserDevice::where('user_id', $user->id)->pluck('device_token')->get();
-            if ($device_token) {
-                $this->sendPushNotification($device_token, 'Wallet Activated', $message);
-            }
+            // $device_token = UserDevice::where('agent_id', $user->id)->pluck('device_token')->get();
+            // if ($device_token) {
+            //     $this->sendPushNotification($device_token, 'Wallet Activated', $message);
+            // }
 
             return response()->json([
                 'response' => 'success',
@@ -615,10 +616,10 @@ class AgentController extends Controller
             'device_type' => 'required|string|max:255',
         ]);
 
-        $user = $this->getCurrentLoggedUserBySanctum();
+        $user = $this->getCurrentLoggedAgentBySanctum();
 
         // Check this info is already saved or not
-        $userDevice = UserDevice::where('user_id', $user->id)
+        $userDevice = UserDevice::where('agent_id', $user->id)
             ->where('device_id', $request->device_id)
             ->first();
 
@@ -639,7 +640,7 @@ class AgentController extends Controller
 
         // Save device token
         UserDevice::create([
-            'user_id' => auth()->user()->id,
+            'agent_id' => auth()->user()->id,
             'push_token' => $request->push_token,
             'device_id' => $request->device_id,
             'device_model' => $request->device_model,
@@ -663,8 +664,8 @@ class AgentController extends Controller
                 'oldPassword' => 'required|string|max:255',
                 'newPassword' => 'required|string|max:255',
             ]);
-            $user_id = $this->getCurrentLoggedUserBySanctum()->id;
-            $user = User::find($user_id);
+            $user_id = $this->getCurrentLoggedAgentBySanctum()->id;
+            $user = Agent::find($user_id);
             $hashed_oldPin = Hash::make($request->oldPassword);
             if (!Hash::check($hashed_oldPin, $user->password)) {
                 return response()->json(['response' => 'failure', 'message' => 'Old password is incorrect.']);
@@ -687,8 +688,8 @@ class AgentController extends Controller
                 'avatar' => 'required|string',
             ]);
 
-            $user_id = $this->getCurrentLoggedUserBySanctum()->id;
-            $user = User::find($user_id);
+            $user_id = $this->getCurrentLoggedAgentBySanctum()->id;
+            $user = Agent::find($user_id);
 
             $user->avatar = $request->avatar;
             $user->save();
@@ -710,7 +711,8 @@ class AgentController extends Controller
                 'lat' => 'required|string|max:255',
                 'long' => 'required|string|max:255',
             ]);
-            $user = $this->getCurrentLoggedUserBySanctum();
+            // $user = getC$this->getCurrentLoggedAgentBySanctum;
+            $user = $this-> getgetCurrentLoggedAgentBySanctum();
             Agent::find($user->id)->update(
                 ['lat' => $request->lat, 'long' => $request->long]
             );
@@ -736,8 +738,8 @@ class AgentController extends Controller
 
 
 
-            // $user_id =  $this->getCurrentLoggedUserBySanctum()->id;
-            $agent_id =  $this->getCurrentLoggedAgentBySanctum()->id;
+            // $user_id =  getC$this->getCurrentLoggedAgentBySanctum->id;
+            $agent_id =  $this->getgetCurrentLoggedAgentBySanctum()->id;
             // Generate a random OTP code
             // $otpCode = 123456;
             $otpCode = random_int(100000, 999999);
@@ -856,11 +858,15 @@ class AgentController extends Controller
             $page = $request->input('page', 1);
             $sortOrder = $request->input('sort_order', 'desc');
 
-            // $user_id =  $this->getCurrentLoggedUserBySanctum()->id;
+            // $user_id =  getC$this->getCurrentLoggedAgentBySanctum->id;
             $agent_id =  $this->getCurrentLoggedAgentBySanctum()->id;
 
             $property_owners =  PropertyOwner::orderBy('id', $sortOrder)->where('agent_id', $agent_id)
-                ->with('properties')
+                ->with([
+                    'properties',
+                    'agent',
+                    'bookings'
+                ])
                 ->paginate($limit, ['*'], 'page', $page);
 
             $response = [
@@ -900,7 +906,7 @@ class AgentController extends Controller
             $page = $request->input('page', 1);
             $sortOrder = $request->input('sort_order', 'desc');
 
-            // $user_id =  $this->getCurrentLoggedUserBySanctum()->id;
+            // $user_id =  getC$this->getCurrentLoggedAgentBySanctum->id;
             $agent_id =  $this->getCurrentLoggedAgentBySanctum()->id;
 
             $property = Property::orderBy('id', $sortOrder)->where('agent_id', $agent_id)
@@ -940,7 +946,7 @@ class AgentController extends Controller
     public function registerPropertyByAgent(Request $request)
     {
         try {
-            // $user_id =  $this->getCurrentLoggedUserBySanctum()->id;
+            // $user_id =  getC$this->getCurrentLoggedAgentBySanctum->id;
             $user_id =  $this->getCurrentLoggedAgentBySanctum()->id;
             //code...
             $request->validate([
@@ -1032,8 +1038,41 @@ class AgentController extends Controller
             //code...
             $user_id =  $this->getCurrentLoggedAgentBySanctum()->id;
             $total_referrals =  PropertyOwner::where('agent_id', $user_id)->count();
-            $toal_properties = Property::where('agent_id', $user_id)->count();
-            return response()->json(['response' => 'success', 'message' => 'Totals fetched successfully.', 'data' => ['total_referrals' => $total_referrals, 'total_properties' => $toal_properties]]);
+            $total_properties = Property::where('agent_id', $user_id)->count();
+            return response()->json(['response' => 'success', 'message' => 'Totals fetched successfully.', 'data' => ['total_referrals' => $total_referrals, 'total_properties' => $total_properties]]);
+        } catch (\Throwable $th) {
+            //throw $th;
+            return response()->json(['success' => false, 'message' => $th->getMessage()]);
+        }
+    }
+
+
+    public function  getAgentPropertyBookings(Request $request)
+    {
+        try {
+            //code...
+            $user_id =  $this->getCurrentLoggedAgentBySanctum()->id;
+            // $properties = Booking::where('agent_id', $user_id)->get();
+            $limit = $request->input('limit', 100);
+            $page = $request->input('page', 1);
+            $sortOrder = $request->input('sort_order', 'desc');
+            $properties = Booking::where('agent_id', $user_id)
+            ->orderBy('id', $sortOrder)
+            ->with(['property', 'user', 'owner', 'agent', 'payment'])
+            ->paginate($limit, ['*'], 'page', $page);
+
+            // return response()->json(['response' => 'success', 'message' => 'Properties fetched successfully.', 'data' => $properties]);
+            $response = [
+                "data" => $properties->items(),
+                "pagination" => [
+                    "total" => $properties->total(),
+                    "current_page" => $properties->currentPage(),
+                    "last_page" => $properties->lastPage(),
+                    "per_page" => $properties->perPage(),
+                ]
+                ];
+
+          return response()->json(['response' => "success", 'data' => $response], 200);
         } catch (\Throwable $th) {
             //throw $th;
             return response()->json(['success' => false, 'message' => $th->getMessage()]);

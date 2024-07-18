@@ -31,6 +31,8 @@ Route::prefix('property_owner')->group(function () {
         Route::post("resetPasswordFirstUser", [PropertyOwnerController::class, 'resetPasswordFirstUser']);
         Route::post('updateUserLocation', [PropertyOwnerController::class, 'updateUserLocation']);
         //auth
+
+        Route::get("getPropertyOwnerPropertyBookings", [PropertyOwnerController::class, "getPropertyOwnerPropertyBookings"]);
     });
     
 });

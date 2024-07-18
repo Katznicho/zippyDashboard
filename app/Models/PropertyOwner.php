@@ -44,5 +44,19 @@ class PropertyOwner extends Authenticatable
         return $this->belongsTo(Agent::class, 'agent_id');
     }
 
+
+    public function bookings()
+    {
+        return $this->hasMany(Booking::class, 'owner_id');
+    }
+
+
+    public function properties()
+    {
+        return $this->hasMany(Property::class, 'owner_id');
+    }
+
+    
+
     
 }

@@ -14,6 +14,7 @@ use App\Models\Likes;
 use App\Models\Notification;
 use App\Models\Payment;
 use App\Models\PointUsage;
+use App\Models\Property;
 use App\Models\PropertyNotification;
 use App\Models\User;
 use App\Models\UserAccount;
@@ -696,6 +697,7 @@ public function getUserLikes(Request $request)
                 'total_price' => 'required',
             ]);
 
+             $property_details= Property::find($request->property_id);
             $user_id =  $this->getCurrentLoggedAppUserBySanctum()->id;
             $user =  AppUser::find($user_id);
             $reference = Str::uuid();
@@ -721,6 +723,8 @@ public function getUserLikes(Request $request)
                 'total_price' => $request->total_price,
                 'payment_id' => $res->id,
                 'status' => 'pending',
+                'agent_id' => $property_details->agent_id,
+                'owner_id' => $property_details->owner_id,
             ]);
 
             if(!$res){

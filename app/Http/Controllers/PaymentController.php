@@ -15,12 +15,14 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Throwable;
 use App\Mail\Payment as MailPayment;
+use App\Models\Agent;
 use App\Models\AppUser;
 use App\Models\Booking;
 use App\Models\UserAccount;
 use App\Models\UserPoint;
 use App\Models\Donation;
 use App\Models\Notification;
+use App\Models\PropertyOwner;
 use App\Models\UserDevice;
 use App\Services\FirebaseService;
 
@@ -123,12 +125,36 @@ class PaymentController extends Controller
                 'status' => config('status.payment_status.completed'),
                 'is_approved'=>1
             ]);
+
+            $booking =  Booking::where("reference", $transaction->reference)->first();
+            $agent_id = $booking->agent_id;
+            $owner_id = $booking->user_id;
+            if($agent_id){
+                //send message to agent
+                $agent = Agent::where('id', $agent_id)->first();
+                $message = "$customer->name has successfully completed the booking. Please check the app for more details. Thanks Zippy Team";
+                if($agent->phone_number){
+                    $this->sendMessage($agent->phone_number, $message);
+                }
+            }
+
+            if($owner_id){
+                //send message to owner
+                $owner = PropertyOwner::where('id', $owner_id)->first();
+                $message = "$customer->name has successfully completed the booking. Please check the app for more details. Thanks Zippy Team";
+                if($owner->phone_number){
+                    $this->sendMessage($owner->phone_number, $message);
+                }
+            }
         }
 
         $message = "Your Payment Has Been Successfully Completed Please check the app for more details. Thanks Zippy Team";
         if($customer->phone_number){
             $this->sendMessage($customer->phone_number, $message);
         }
+
+        //get agent
+         
 
         if($customer->email){
 

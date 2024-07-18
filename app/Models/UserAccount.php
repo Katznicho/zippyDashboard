@@ -17,11 +17,23 @@ class UserAccount extends Model
         'show_wallet_balance',
         'pin',
         'is_active',
+        'agent_id',
+        'owner_id'
     ];
 
     //accont belongs to user
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function agent(): BelongsTo
+    {
+        return $this->belongsTo(Agent::class, 'agent_id');
+    }
+
+    public function owner(): BelongsTo
+    {
+        return $this->belongsTo(PropertyOwner::class, 'owner_id');
     }
 } 

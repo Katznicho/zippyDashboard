@@ -18,7 +18,9 @@ class Booking extends Model
         'total_price',
         'duration_in_days',
         'payment_id',
-        'app_user_id'
+        'app_user_id',
+        'owner_id',
+        'agent_id',
     ];
 
 
@@ -36,6 +38,18 @@ class Booking extends Model
     public function appUser()
     {
         return $this->belongsTo(AppUser::class);
+    }
+
+
+    public function owner()
+    {
+        return $this->belongsTo(PropertyOwner::class, 'owner_id');
+    }
+
+
+    public function agent()
+    {
+        return $this->belongsTo(Agent::class, 'agent_id');
     }
 
 
