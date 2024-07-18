@@ -10,10 +10,17 @@ use App\Models\Service;
 use App\Traits\MessageTrait;
 use App\Traits\PropertyOwnerTrait;
 use App\Traits\UserTrait;
-use App\Models\Booking;
 use Illuminate\Http\Request;
+use App\Models\Booking;
+use App\Models\UserAccount;
+use App\Models\UserDevice;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use App\Mail\WalletActivated;
+use App\Models\Agent;
+use Throwable;
+
 
 class PropertyOwnerController extends Controller
 {
@@ -57,7 +64,8 @@ class PropertyOwnerController extends Controller
     public function updateFirstUser(Request $request)
     {
         try {
-            $user_id =  $this->getCurrentLoggedPropertyOwnerBySanctum()->id;
+            //$user_id =  $this->getCurrentLoggedPropertyOwnerBySanctum()->id;
+            $user_id = auth('property_owner')->user()->id;
             $user = PropertyOwner::find($user_id)->update([
                 'is_new_user' => false
             ]);
@@ -224,6 +232,253 @@ class PropertyOwnerController extends Controller
         ], 200);
     }
 
+    //new
+    public function setUpUserWalletAccount(Request $request)
+    {
+        $request->validate([
+            'pin' => 'required|string|min:4|max:4',
+        ]);
+        // $user = $this->getCurrentLoggedAgentBySanctum();
+        $user = auth('property_owner')->user();
+        if ($user) {
+
+            //update or create wallet
+            UserAccount::updateOrCreate(
+
+                ['owner_id' => $user->id],
+
+                [
+                    'owner_id' => $user->id,
+                    'account_name' => $user->name,
+                    'account_currency' => 'UGX',
+                    'account_balance' => 0,
+                    'show_wallet_balance' => false,
+                    'pin' => Hash::make($request->pin),
+                    'is_active' => true,
+                ]
+            );
+
+            $message = 'Hello ' . $user->name . ', your wallet account has been successfully created. Your account balance is 0';
+
+            try {
+                Mail::to($user->email)->send(new WalletActivated($user, 'Wallet Activated', $message));
+            } catch (Throwable $th) {
+                // throw $th;
+                Log::error($th);
+            }
+
+            //send them a push notification
+            //$device_token = UserDevice::where('user_id', $user->id)->get();
+
+            // if (strlen($device_token) > 0) {
+            //     $this->sendPushNotification($device_token[0]->push_token, "Wallet Activated", $message);
+            // }
+
+            return response()->json([
+                'response' => 'success',
+                'message' => 'Wallet account successfully created!',
+            ]);
+        } else {
+            return response()->json([
+                'response' => 'failure',
+                'message' => 'User does not exist',
+            ], 401);
+        }
+    }
+
+    //check if user has a wallet account
+    public function hasWalletAccount()
+    {
+        // $user = $this->getCurrentLoggedAgentBySanctum();
+        $user = auth('property_owner')->user();
+        if ($user) {
+            $wallet = UserAccount::where('owner_id', $user->id)->first();
+            if ($wallet) {
+                return response()->json([
+                    'response' => 'success',
+                    'message' => 'User has a wallet',
+                    'data' => $wallet,
+                ]);
+            } else {
+                return response()->json([
+                    'response' => 'failure',
+                    'message' => 'User does not have a wallet',
+                ]);
+            }
+        } else {
+            return response()->json([
+                'response' => 'failure',
+                'message' => 'User does not exist',
+            ]);
+        }
+    }
+
+    //updata show_wallet_balance
+    public function updateShowWalletBalance(Request $request)
+    {
+        try {
+            $request->validate([
+                'pin' => 'required|string|min:4|max:4',
+                'show_wallet_balance' => 'required',
+            ]);
+            //check if pins match
+            // $user = $this->getCurrentLoggedAgentBySanctum();
+            $user = auth('property_owner')->user();
+
+            if (!$user) {
+                return response()->json([
+                    'response' => 'failure',
+                    'message' => 'User Not Found',
+                ], 401);
+            } else {
+                $wallet = UserAccount::where('owner_id', $user->id)->first();
+                if (!$wallet) {
+                    return response()->json([
+                        'response' => 'success',
+                        'message' => 'User has a wallet',
+                        'data' => $wallet,
+                    ]);
+                }
+                if (Hash::check($request->pin, $wallet->pin)) {
+                    $wallet->show_wallet_balance = $request->show_wallet_balance;
+                    $wallet->save();
+
+                    return response()->json([
+                        'response' => 'success',
+                        'message' => 'Show Wallet has been updated',
+                        'data' => $wallet,
+                    ]);
+                } else {
+                    return response()->json([
+                        'response' => 'failure',
+                        'message' => 'Invalid credentials',
+                    ], 401);
+                }
+            }
+        } catch (\Throwable $th) {
+            return response()->json([
+                'response' => 'failure',
+                'message' => $th->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function changeCustomerPin(Request $request)
+    {
+        try {
+            $request->validate([
+                'odPin' => 'required|string|min:4|max:4',
+                'newPin' => 'required|string|min:4|max:4|confirmed',
+            ]);
+
+            // $user = $this->getCurrentLoggedAgentBySanctum();
+            $user = auth('property_owner')->user();
+
+            // Find the customer
+            $customer = PropertyOwner::find($user->id);
+
+            if (!$customer) {
+                return response()->json([
+                    'response' => 'failure',
+                    'message' => 'Invalid credentials',
+                ], 401);
+            }
+            $hashed_odPin = Hash::make($request->odPin);
+            if ($hashed_odPin != $customer->pin) {
+                return response()->json([
+                    'response' => 'failure',
+                    'message' => 'Invalid credentials',
+                ], 401);
+            }
+            $hashed_newPin = Hash::make($request->newPin);
+            $customer->pin = $hashed_newPin;
+            $customer->save();
+            //send message to customer
+            $message = 'Your new wallet  pin is ' . $request->newPin . 'If you did not make this request, please contact us.';
+            $this->sendMessage($customer->phone_number, $message);
+            try {
+                Mail::to($user->email)->send(new WalletActivated($customer, 'Wallet Activated', $message));
+            } catch (Throwable $th) {
+                // throw $th;
+                Log::error($th);
+            }
+
+            //send them a push notification
+            //send them a push notification
+            // $device_token = UserDevice::where('agent_id', $user->id)->pluck('device_token')->get();
+            // if ($device_token) {
+            //     $this->sendPushNotification($device_token, 'Wallet Activated', $message);
+            // }
+
+            return response()->json([
+                'response' => 'success',
+                'customer' => $customer,
+            ], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'response' => 'failure',
+                'message' => $th->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function saveDeviceInfo(Request $request)
+    {
+        $request->validate([
+            'push_token' => 'required|string|max:255',
+            'device_id' => 'required|string|max:255',
+            'device_model' => 'required|string|max:255',
+            'device_manufacturer' => 'required|string|max:255',
+            'app_version' => 'required|string|max:255',
+            'device_os' => 'required|string|max:255',
+            'device_os_version' => 'required|string|max:255',
+            'device_user_agent' => 'required|string|max:255',
+            'device_type' => 'required|string|max:255',
+        ]);
+
+        // $user = $this->getCurrentLoggedAgentBySanctum();
+        $user = auth('property_owner')->user();
+
+        // Check this info is already saved or not
+        $userDevice = UserDevice::where('owner_id', $user->id)
+            ->where('device_id', $request->device_id)
+            ->first();
+
+        if ($userDevice) {
+            $userDevice->update([
+                'push_token' => $request->push_token,
+                'device_model' => $request->device_model,
+                'device_manufacturer' => $request->device_manufacturer,
+                'app_version' => $request->app_version,
+                'device_os' => $request->device_os,
+                'device_os_version' => $request->device_os_version,
+                'device_user_agent' => $request->device_user_agent,
+                'device_type' => $request->device_type,
+            ]);
+
+            return response()->json(['response' => 'success', 'message' => 'Device token updated successfully.']);
+        }
+
+        // Save device token
+        UserDevice::create([
+            'owner_id' => auth('property_owner')->user()->id,
+            'push_token' => $request->push_token,
+            'device_id' => $request->device_id,
+            'device_model' => $request->device_model,
+            'device_manufacturer' => $request->device_manufacturer,
+            'app_version' => $request->app_version,
+            'device_os' => $request->device_os,
+            'device_os_version' => $request->device_os_version,
+            'device_user_agent' => $request->device_user_agent,
+            'device_type' => $request->device_type,
+        ]);
+
+        return response()->json(['response' => 'success', 'message' => 'Device token saved successfully.']);
+    }
+
+
+    //new
+
 
     public function resetPasswordFirstUser(Request $request)
     {
@@ -252,9 +507,9 @@ class PropertyOwnerController extends Controller
         $request->validate([
             'avatar' => 'required',
         ]);
-
+        $user_id = auth('property_owner')->user()->id;
         // Find the user
-        $user = PropertyOwner::where('id', $request->user()->id)->first();
+        $user = PropertyOwner::where('id', $user_id)->first();
 
         // Check if the user exists
         if (!$user) {
@@ -318,7 +573,7 @@ class PropertyOwnerController extends Controller
             $page = $request->input('page', 1);
             $sortOrder = $request->input('sort_order', 'desc');
 
-            // $user_id =  $this->getCurrentLoggedPropertyOwnerBySanctum()->id;
+
             $user_id = auth('property_owner')->user()->id;
 
             $property = Property::orderBy('id', $sortOrder)->where('owner_id', $user_id)
@@ -359,10 +614,6 @@ class PropertyOwnerController extends Controller
     {
         try {
             //code...
-            // $user_id =  $this->getCurrentLoggedUserBySanctum()->id;
-            // $total_referrals =  User::where('referrer_id', $user_id)->where("property_owner_verified", true)->count();
-            // $user_id =  $this->getCurrentLoggedPropertyOwnerBySanctum()->id;
-            // $user_id =  $this->getCurrentLoggedPropertyOwnerBySanctum()->id;
             $user_id = auth('property_owner')->user()->id;
             $toal_properties = Property::where('owner_id', $user_id)->count();
             return response()->json(['response' => 'success', 'message' => 'Totals fetched successfully.', 'data' => ['total_properties' => $toal_properties]]);
@@ -376,8 +627,8 @@ class PropertyOwnerController extends Controller
     {
         try {
             //code...
-            $user_id =  $this->getCurrentLoggedAgentBySanctum()->id;
-            // $properties = Booking::where('agent_id', $user_id)->get();
+
+            $user_id = auth('property_owner')->user()->id;
             $limit = $request->input('limit', 100);
             $page = $request->input('page', 1);
             $sortOrder = $request->input('sort_order', 'desc');

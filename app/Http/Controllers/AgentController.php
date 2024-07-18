@@ -555,7 +555,7 @@ class AgentController extends Controller
             $user = $this->getCurrentLoggedAgentBySanctum();
 
             // Find the customer
-            $customer = User::find($user->id);
+            $customer = Agent::find($user->id);
 
             if (!$customer) {
                 return response()->json([
