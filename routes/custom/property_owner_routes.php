@@ -33,6 +33,7 @@ Route::prefix('property_owner')->group(function () {
         //auth
 
         Route::get("getPropertyOwnerPropertyBookings", [PropertyOwnerController::class, "getPropertyOwnerPropertyBookings"]);
+        Route::get("getOwnerTransactions", [PropertyOwnerController::class, "getOwnerTransactions"]);
     });
     
 });

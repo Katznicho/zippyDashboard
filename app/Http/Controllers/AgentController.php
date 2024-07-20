@@ -22,6 +22,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Throwable;
+use APP\Models\Transaction;
 
 class AgentController extends Controller
 {
@@ -1074,6 +1075,36 @@ class AgentController extends Controller
 
           return response()->json(['response' => "success", 'data' => $response], 200);
         } catch (\Throwable $th) {
+            //throw $th;
+            return response()->json(['success' => false, 'message' => $th->getMessage()]);
+        }
+    }
+
+
+    public function getAgentTransactions(Request $request){
+
+        try {
+        $user_id =  $this->getCurrentLoggedAgentBySanctum()->id;
+        $limit = $request->input('limit', 100);
+        $page = $request->input('page', 1);
+        $sortOrder = $request->input('sort_order', 'desc');
+        $transactions = Transaction::where('agent_id', $user_id)
+        ->orderBy('id', $sortOrder)
+        ->with(['user', 'appUser', 'agent', 'payment'])
+        ->paginate($limit, ['*'], 'page', $page);
+        $response = [
+            "data" => $transactions->items(),
+            "pagination" => [
+                "total" => $transactions->total(),
+                "current_page" => $transactions->currentPage(),
+                "last_page" => $transactions->lastPage(),
+                "per_page" => $transactions->perPage(),
+            ]
+            ];
+        return response()->json(['response' => "success", 'data' => $response], 200);
+        }
+
+        catch (\Throwable $th) {
             //throw $th;
             return response()->json(['success' => false, 'message' => $th->getMessage()]);
         }

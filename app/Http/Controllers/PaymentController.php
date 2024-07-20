@@ -23,6 +23,7 @@ use App\Models\UserPoint;
 use App\Models\Donation;
 use App\Models\Notification;
 use App\Models\PropertyOwner;
+use App\Models\Transaction;
 use App\Models\UserDevice;
 use App\Services\FirebaseService;
 
@@ -136,6 +137,24 @@ class PaymentController extends Controller
                 if($agent->phone_number){
                     $this->sendMessage($agent->phone_number, $message);
                 }
+                // UserAccount::where('agent_id', $agent_id)->update([
+                //     'account_balance' => $agent->account_balance + $transaction->amount,
+                // ]);
+                //get current agent wallet balance
+                $agent_amount  = 1000;
+                 $balance =  UserAccount::where('agent_id', $agent_id)->first();
+                UserAccount::where('agent_id', $agent_id)->update([
+                    'account_balance' => $balance->account_balance + $agent_amount,
+                ]);
+                Transaction::create([
+                    'agent_id' => $agent_id,
+                    'type' =>'credit',
+                    'amount' => $agent_amount,
+                    'status' =>'Completed',
+                    'description' =>'Commission payment for booking',
+                    'reference' => $transaction->reference,
+                    'payment_id' => $transaction->id
+                ]);
             }
 
             if($owner_id){
@@ -145,6 +164,20 @@ class PaymentController extends Controller
                 if($owner->phone_number){
                     $this->sendMessage($owner->phone_number, $message);
                 }
+                $balance =  UserAccount::where('owner_id', $owner_id)->first();
+                UserAccount::where('owner_id', $owner_id)->update([
+                    'account_balance' => $balance->account_balance + $transaction->amount,
+                ]);
+
+                Transaction::create([
+                    'owner_id' => $owner_id,
+                    'type' =>'credit',
+                    'amount' => $transaction->amount,
+                    'status' =>'Completed',
+                    'description' =>'booking payment',
+                    'reference' => $transaction->reference,
+                    'payment_id' => $transaction->id
+                ]);
             }
         }
 
