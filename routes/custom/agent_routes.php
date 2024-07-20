@@ -41,6 +41,8 @@ Route::prefix('agent')->group(function () {
         //
         Route::get("getAgentPropertyBookings", [AgentController::class, "getAgentPropertyBookings"]);
         Route::get("getAgentTransactions", [AgentController::class, "getAgentTransactions"]);
+
+        Route::post("profileUpload", [AgentController::class, "profileUpload"]);
     });
 
 

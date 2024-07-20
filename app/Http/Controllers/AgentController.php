@@ -22,7 +22,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Throwable;
-use APP\Models\Transaction;
+use App\Models\Transaction;
 
 class AgentController extends Controller
 {
@@ -1040,7 +1040,9 @@ class AgentController extends Controller
             $user_id =  $this->getCurrentLoggedAgentBySanctum()->id;
             $total_referrals =  PropertyOwner::where('agent_id', $user_id)->count();
             $total_properties = Property::where('agent_id', $user_id)->count();
-            return response()->json(['response' => 'success', 'message' => 'Totals fetched successfully.', 'data' => ['total_referrals' => $total_referrals, 'total_properties' => $total_properties]]);
+            $total_bookings = Booking::where('agent_id', $user_id)->count();
+            $total_transactions =  Transaction::where('agent_id', $user_id)->count();
+            return response()->json(['response' => 'success', 'message' => 'Totals fetched successfully.', 'data' => ['total_referrals' => $total_referrals, 'total_properties' => $total_properties, 'total_bookings' => $total_bookings, 'total_transactions' => $total_transactions]]);
         } catch (\Throwable $th) {
             //throw $th;
             return response()->json(['success' => false, 'message' => $th->getMessage()]);
@@ -1108,5 +1110,27 @@ class AgentController extends Controller
             //throw $th;
             return response()->json(['success' => false, 'message' => $th->getMessage()]);
         }
+    }
+
+    public function profileUpload(Request $request)
+    {
+        try {
+            //code...
+            $user_id =  $this->getCurrentLoggedAgentBySanctum()->id;
+            $request->validate(['profile_pic' => 'required']);
+            // Store all ID images under one folder
+            $destination_path = 'public/profile';
+            //store the in a folder
+            $profile_picture = $request->profile_pic->store($destination_path);
+            //return the name of the images
+            $pic_path = str_replace($destination_path . '/', '', $profile_picture);
+            //update the user avatar
+            Agent::where('id', $user_id)->update(['avatar' => $pic_path]);
+            return response()->json(['message' => 'success', 'data' => ['profile_pic' => $pic_path]], 201);
+        } catch (\Throwable $th) {
+            //throw $th;
+            return response()->json(['success' => false, 'message' => $th->getMessage()]);
+        }
+
     }
 }
