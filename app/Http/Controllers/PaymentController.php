@@ -122,14 +122,14 @@ class PaymentController extends Controller
         }
         else{
             //booking payment
-            Booking::where("reference", $transaction->reference)->update([
+            Booking::where("payment_id", $transaction->id)->update([
                 'status' => config('status.payment_status.completed'),
                 'is_approved'=>1
             ]);
 
-            $booking =  Booking::where("reference", $transaction->reference)->first();
+            $booking =  Booking::where("payment_id", $transaction->id)->first();
             $agent_id = $booking->agent_id;
-            $owner_id = $booking->user_id;
+            $owner_id = $booking->owner_id;
             if($agent_id){
                 //send message to agent
                 $agent = Agent::where('id', $agent_id)->first();
@@ -143,18 +143,18 @@ class PaymentController extends Controller
                 //get current agent wallet balance
                 $agent_amount  = 1000;
                  $balance =  UserAccount::where('agent_id', $agent_id)->first();
-                UserAccount::where('agent_id', $agent_id)->update([
-                    'account_balance' => $balance->account_balance + $agent_amount,
-                ]);
-                Transaction::create([
-                    'agent_id' => $agent_id,
-                    'type' =>'credit',
-                    'amount' => $agent_amount,
-                    'status' =>'Completed',
-                    'description' =>'Commission payment for booking',
-                    'reference' => $transaction->reference,
-                    'payment_id' => $transaction->id
-                ]);
+                // UserAccount::where('agent_id', $agent_id)->update([
+                //     'account_balance' => $balance->account_balance + $agent_amount,
+                // ]);
+                // Transaction::create([
+                //     'agent_id' => $agent_id,
+                //     'type' =>'credit',
+                //     'amount' => $agent_amount,
+                //     'status' =>'Completed',
+                //     'description' =>'Commission payment for booking',
+                //     'reference' => $transaction->reference,
+                //     'payment_id' => $transaction->id
+                // ]);
             }
 
             if($owner_id){
@@ -165,19 +165,19 @@ class PaymentController extends Controller
                     $this->sendMessage($owner->phone_number, $message);
                 }
                 $balance =  UserAccount::where('owner_id', $owner_id)->first();
-                UserAccount::where('owner_id', $owner_id)->update([
-                    'account_balance' => $balance->account_balance + $transaction->amount,
-                ]);
+                // UserAccount::where('owner_id', $owner_id)->update([
+                //     'account_balance' => $balance->account_balance + $transaction->amount,
+                // ]);
 
-                Transaction::create([
-                    'owner_id' => $owner_id,
-                    'type' =>'credit',
-                    'amount' => $transaction->amount,
-                    'status' =>'Completed',
-                    'description' =>'booking payment',
-                    'reference' => $transaction->reference,
-                    'payment_id' => $transaction->id
-                ]);
+                // Transaction::create([
+                //     'owner_id' => $owner_id,
+                //     'type' =>'credit',
+                //     'amount' => $transaction->amount,
+                //     'status' =>'Completed',
+                //     'description' =>'booking payment',
+                //     'reference' => $transaction->reference,
+                //     'payment_id' => $transaction->id
+                // ]);
             }
         }
 
@@ -287,9 +287,9 @@ class PaymentController extends Controller
     public function completePayment(Request $request)
     {
         try {
-            Log::info('===========The call back was called===================================');
-            Log::info('Received Response Page');
-            Log::info('============The call back was called==================================');
+            // Log::info('===========The call back was called===================================');
+            // Log::info('Received Response Page');
+            // Log::info('============The call back was called==================================');
             // Get the parameters from the URL
             $orderTrackingId = $request->input('OrderTrackingId');
             $orderMerchantReference = $request->input('OrderMerchantReference');

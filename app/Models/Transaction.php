@@ -19,6 +19,7 @@ class Transaction extends Model
         'description',
         'reference',
         'payment_id',
+        'owner_id'
     ];
 
     public function user()
@@ -39,5 +40,10 @@ class Transaction extends Model
     public function payment()
     {
         return $this->belongsTo(Payment::class);
+    }
+
+    public function owner()
+    {
+        return $this->belongsTo(User::class, 'owner_id');
     }
 }

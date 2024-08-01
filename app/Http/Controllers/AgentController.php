@@ -1002,7 +1002,7 @@ class AgentController extends Controller
                 'number_of_beds' => $request->number_of_beds,
                 'number_of_baths' => $request->number_of_baths,
                 // 'number_of_rooms' => $request->number_of_rooms,
-                // 'room_type' => $request->room_type,
+                'room_type' => $request->room_type,
                 'furnishing_status' => $request->furnishing_status,
                 'status_id' => $request->status_id,
                 'public_facilities' => $request->public_facilities,

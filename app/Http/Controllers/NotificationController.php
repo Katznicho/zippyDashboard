@@ -22,8 +22,8 @@ class NotificationController extends Controller
             foreach ($userPushTokens as $userPushToken) {
                 $token = $userPushToken->push_token;
 
-                $title = $request->input('title') ?? "Good Night! 🌙✨";
-                $body = $request->input('body') ?? "It's the weekend! Time to relax, unwind, and have sweet dreams! 😴🌟";
+                $title = $request->input('title') ?? "Good morning! 🌞";
+                $body = $request->input('body') ?? "On this morning, we wish you the best. 🌞";
                 $data = $request->input('data') ?? [
                     'Reminder' => 'Enjoy your night!',
                 ];

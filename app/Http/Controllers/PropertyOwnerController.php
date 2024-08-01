@@ -20,7 +20,7 @@ use Illuminate\Support\Facades\Mail;
 use App\Mail\WalletActivated;
 use App\Models\Agent;
 use Throwable;
-use APP\Models\Transaction;
+use App\Models\Transaction;
 
 
 class PropertyOwnerController extends Controller
@@ -660,7 +660,90 @@ class PropertyOwnerController extends Controller
     public function getOwnerTransactions(Request $request){
 
         try {
-        $user_id = auth('property_owner')->user()->id;;
+        $user_id = auth('property_owner')->user()->id;
+        $limit = $request->input('limit', 100);
+        $page = $request->input('page', 1);
+        $sortOrder = $request->input('sort_order', 'desc');
+        $transactions = Transaction::where('owner_id', $user_id)
+        ->orderBy('id', $sortOrder)
+        ->with(['user', 'appUser', 'agent', 'payment'])
+        ->paginate($limit, ['*'], 'page', $page);
+        $response = [
+            "data" => $transactions->items(),
+            "pagination" => [
+                "total" => $transactions->total(),
+                "current_page" => $transactions->currentPage(),
+                "last_page" => $transactions->lastPage(),
+                "per_page" => $transactions->perPage(),
+            ]
+            ];
+        return response()->json(['response' => "success", 'data' => $response], 200);
+        }
+
+        catch (\Throwable $th) {
+            //throw $th;
+            return response()->json(['success' => false, 'message' => $th->getMessage()]);
+        }
+    }
+
+    public function profileUpload(Request $request)
+    {
+        try {
+            //code...
+            $user_id = auth('property_owner')->user()->id;
+            $request->validate(['profile_pic' => 'required']);
+            // Store all ID images under one folder
+            $destination_path = 'public/profile';
+            //store the in a folder
+            $profile_picture = $request->profile_pic->store($destination_path);
+            //return the name of the images
+            $pic_path = str_replace($destination_path . '/', '', $profile_picture);
+            //update the user avatar
+            PropertyOwner::where('id', $user_id)->update(['avatar' => $pic_path]);
+            return response()->json(['message' => 'success', 'data' => ['profile_pic' => $pic_path]], 201);
+        } catch (\Throwable $th) {
+            //throw $th;
+            return response()->json(['success' => false, 'message' => $th->getMessage()]);
+        }
+
+    }
+
+    public function  getPropertyOwnerBookings(Request $request)
+    {
+        try {
+            //code...
+            $user_id = auth('property_owner')->user()->id;
+            // $properties = Booking::where('agent_id', $user_id)->get();
+            $limit = $request->input('limit', 100);
+            $page = $request->input('page', 1);
+            $sortOrder = $request->input('sort_order', 'desc');
+            $properties = Booking::where('owner_id', $user_id)
+            ->orderBy('id', $sortOrder)
+            ->with(['property', 'user', 'owner', 'agent', 'payment'])
+            ->paginate($limit, ['*'], 'page', $page);
+
+            // return response()->json(['response' => 'success', 'message' => 'Properties fetched successfully.', 'data' => $properties]);
+            $response = [
+                "data" => $properties->items(),
+                "pagination" => [
+                    "total" => $properties->total(),
+                    "current_page" => $properties->currentPage(),
+                    "last_page" => $properties->lastPage(),
+                    "per_page" => $properties->perPage(),
+                ]
+                ];
+
+          return response()->json(['response' => "success", 'data' => $response], 200);
+        } catch (\Throwable $th) {
+            //throw $th;
+            return response()->json(['success' => false, 'message' => $th->getMessage()]);
+        }
+    }
+
+    public function getPropertyOwnerTransactions(Request $request){
+
+        try {
+        $user_id = auth('property_owner')->user()->id;
         $limit = $request->input('limit', 100);
         $page = $request->input('page', 1);
         $sortOrder = $request->input('sort_order', 'desc');

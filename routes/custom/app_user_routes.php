@@ -75,5 +75,6 @@ Route::prefix('app-user')->group(function () {
         // Route::post("resetPasswordFirstUser", [AuthController::class, 'resetPasswordFirstUser']);
 
         Route::post('updateUserLocation', [AppUserController::class, 'updateUserLocation']);
+        Route::post("requestCall", [AppUserController::class, "requestCall"]);
     });
 });

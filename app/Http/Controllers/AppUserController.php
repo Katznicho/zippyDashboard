@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Mail\RequestPasswordReset;
 use App\Mail\UserVerification;
 use App\Mail\WalletActivated;
+use App\Models\Agent;
 use App\Models\AgentComment;
 use App\Models\AppUser;
 use App\Models\Booking;
@@ -15,7 +16,7 @@ use App\Models\Notification;
 use App\Models\Payment;
 use App\Models\PointUsage;
 use App\Models\Property;
-use App\Models\PropertyNotification;
+use App\Models\PropertyOwner;
 use App\Models\User;
 use App\Models\UserAccount;
 use App\Models\UserDevice;
@@ -831,30 +832,41 @@ public function getUserLikes(Request $request)
     }
 
     public function getUserBookings(Request $request)
-    {
-        try {
-            $limit = $request->input('limit', 100);
-            $page = $request->input('page', 1);
-            $user_id =  $this->getCurrentLoggedAppUserBySanctum()->id;
+{
+    try {
+        $limit = $request->input('limit', 100);
+        $page = $request->input('page', 1);
+        $status = $request->input('status', 'Completed');
+        $user_id = $this->getCurrentLoggedAppUserBySanctum()->id;
 
-            $bookingQuery = Booking::where('app_user_id', $user_id)->with(['property', 'user']);
+        // Start building the query
+        $bookingQuery = Booking::where('app_user_id', $user_id)
+                               ->with(['property', 'user']);
 
-            $bookings = $bookingQuery->paginate($limit, ['*'], 'page', $page);
-
-            $response = [
-                'data' => $bookings->items(),
-                'pagination' => [
-                    'current_page' => $bookings->currentPage(),
-                    'per_page' => $limit,
-                    'total' => $bookings->total(),
-                ],
-            ];
-
-            return response()->json(['success' => true, 'data' => $response]);
-        } catch (\Throwable $th) {
-            return response()->json(['success' => false, 'message' => $th->getMessage()]);
+        // Apply status filter if status is set
+        if (!empty($status)) {
+            $bookingQuery->where('status', $status);
         }
+
+        // Paginate the results
+        $bookings = $bookingQuery->paginate($limit, ['*'], 'page', $page);
+
+        // Prepare the response
+        $response = [
+            'data' => $bookings->items(),
+            'pagination' => [
+                'current_page' => $bookings->currentPage(),
+                'per_page' => $limit,
+                'total' => $bookings->total(),
+            ],
+        ];
+
+        return response()->json(['success' => true, 'data' => $response]);
+    } catch (\Throwable $th) {
+        return response()->json(['success' => false, 'message' => $th->getMessage()]);
     }
+}
+
     //here
 
     public function getUserPayments(Request $request)
@@ -1171,4 +1183,37 @@ public function getUserLikes(Request $request)
         return response()->json(['response' => 'success', 'message' => 'Device token saved successfully.']);
     }
     //save device info
+
+    public function requestCall(Request $request)
+    {
+     try {
+        //code...
+        $request->validate([
+            'property_id' => 'required',
+        ]);
+        $user = $this->getCurrentLoggedAppUserBySanctum();
+        $property = Property::find($request->property_id);
+
+        $agent_id =  $property->agent_id;
+
+        $agent = Agent::find($agent_id);
+        $owner_id = $property->owner_id;
+        $owner = PropertyOwner::find($owner_id);
+        
+        $customerMessage = "Dear Customer your going to be contacted soon about " . $property->name . " property. Thank you";
+
+        $agentMessage = "Dear " . $agent->name . " customer " .$user->name ." with phone " . $user->phone_number . "has requested to contact them about " . $property->name . " property. Thank you";
+        $ownerMessage = "Dear " . $owner->name . " customer " .$user->name ." with phone " . $user->phone_number . "has requested to contact them about " . $property->name . " property. Thank you";
+
+        $this->sendMessage($agent->phone_number, $agentMessage);
+        $this->sendMessage($user->phone_number, $customerMessage);
+        $this->sendMessage($owner->phone_number, $ownerMessage);
+
+        return response()->json(['response' => 'success', 'message' => 'Request sent successfully.']);
+     } catch (\Throwable $th) {
+        //throw $th;
+        return response()->json(['success' => false, 'message' => $th->getMessage()]);
+     }
+    }
+
 }

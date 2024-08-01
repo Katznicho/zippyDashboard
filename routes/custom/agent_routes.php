@@ -20,6 +20,7 @@ Route::prefix('agent')->group(function () {
         Route::post('updateShowWalletBalance', [AgentController::class, 'updateShowWalletBalance']);
         Route::post('changeCustomerPin', [AgentController::class, 'changeCustomerPin']);
         Route::post('saveOrUpdateUserLocation', [AgentController::class, 'saveOrUpdateUserLocation']);
+        
         Route::post('logout', [AgentController::class, 'logout']);
         Route::post('changePassword', [AgentController::class, 'changePassword']);
         Route::post('updateAvatar', [AgentController::class, 'updateAvatar']);

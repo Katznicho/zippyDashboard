@@ -160,6 +160,47 @@ class GeneralController extends Controller
         }
     }
 
+    public function searchProperties(Request $request){
+        try {
+            //code...
+            $limit = $request->input('limit', 100);
+            $page = $request->input('page', 1);
+            $sortOrder = $request->input('sort_order', 'desc');
+            $search = $request->input('category_id', '');
+
+            $property = Property::orderBy('id', $sortOrder)
+              ->where('category_id', $search)
+                ->with([
+                    'agent',
+                    'owner',
+                    'services',
+                    'amenities',
+                    'category',
+                    'amenityProperties',
+                    'propertyServices',
+                    'paymentPeriod',
+                    'status',
+                    'currency'
+                ])
+                ->paginate($limit, ['*'], 'page', $page);
+
+            $response = [
+                "data" => $property->items(),
+                "pagination" => [
+                    "total" => $property->total(),
+                    "current_page" => $property->currentPage(),
+                    "last_page" => $property->lastPage(),
+                    "per_page" => $property->perPage(),
+                ]
+
+            ];
+            return response()->json(['response' => "success", 'data' => $response], 200);
+        } catch (\Throwable $th) {
+            //throw $th;
+            return response()->json(['success' => false, 'message' => $th->getMessage()]);
+        }
+    }
+
     public function getPropertyCommentsByIdAndPaginated(Request $request){
         try {
              $request->validate([

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\PropertyOwnerController;
+use App\Models\PropertyOwner;
 use Illuminate\Support\Facades\Route;
 
 
@@ -34,6 +35,9 @@ Route::prefix('property_owner')->group(function () {
 
         Route::get("getPropertyOwnerPropertyBookings", [PropertyOwnerController::class, "getPropertyOwnerPropertyBookings"]);
         Route::get("getOwnerTransactions", [PropertyOwnerController::class, "getOwnerTransactions"]);
+        Route::post("profileUpload", [PropertyOwnerController::class, "profileUpload"]);
+        Route::get("getPropertyOwnerBookings", [PropertyOwnerController::class, "getPropertyOwnerBookings"]);
+        Route::get("getPropertyOwnerTransactions", [PropertyOwnerController::class, "getPropertyOwnerTransactions"]);
     });
     
 });
