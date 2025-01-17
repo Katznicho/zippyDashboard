@@ -76,5 +76,8 @@ Route::prefix('app-user')->group(function () {
 
         Route::post('updateUserLocation', [AppUserController::class, 'updateUserLocation']);
         Route::post("requestCall", [AppUserController::class, "requestCall"]);
+
+        Route::post("getUserMoveRequests", [AppUserController::class, "getUserMoveRequests"]);
+        Route::post("createMoveRequest", [AppUserController::class, "createMoveRequest"]);
     });
 });

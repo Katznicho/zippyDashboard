@@ -12,6 +12,8 @@ use App\Models\AppUser;
 use App\Models\Booking;
 use App\Models\Comment;
 use App\Models\Likes;
+use App\Models\MoveRequest;
+use App\Models\MoverRequest;
 use App\Models\Notification;
 use App\Models\Payment;
 use App\Models\PointUsage;
@@ -28,12 +30,12 @@ use App\Traits\MessageTrait;
 use App\Traits\SendPushNotification;
 use App\Traits\UserTrait;
 use App\Traits\ZippyAlertTrait;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
-use Throwable;
-use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Throwable;
 
 class AppUserController extends Controller
 {
@@ -442,7 +444,8 @@ class AppUserController extends Controller
     public function fetchUserPointsUsages(Request $request)
     {
         try {
-            $user_id =  $this->getCurrentLoggedUserBySanctum()->id;
+            // $user_id =  $this->getCurrentLoggedUserBySanctum()->id;
+            $user_id =  $this->getCurrentLoggedAppUserBySanctum()->id;
             // $user = User::find($user_id)->pointUsages;
             $points = PointUsage::where('app_user_id', $user_id)->get();
             return response()->json(['response' => 'success', 'data' => $points, 'message' => 'User Usage Points fetched successfully.']);
@@ -868,6 +871,70 @@ public function getUserLikes(Request $request)
 }
 
     //here
+
+    //user move requests
+    public function getUserMoveRequests(Request $request)
+    {
+        try {
+            //code...
+            $user_id =  $this->getCurrentLoggedAppUserBySanctum()->id;
+            $requests =  MoverRequest::where('app_user_id', $user_id)->get();
+            return response()->json(['success' => true, 'data' => $requests]);
+        } catch (\Throwable $th) {
+            //throw $th;
+            return response()->json(['success' => false, 'message' => $th->getMessage()]);
+        }
+
+    }
+
+    public function createMoveRequest(Request $request)
+    {
+        try {
+            //code...
+            $request->validate([
+                'car_type' => 'required|string',
+                'moved_item' => 'required|string',
+                'pickup_address' => 'required|string',
+                'pickup_lat' => 'required|string',
+                'pickup_long' => 'required|string',
+                'dropoff_address' => 'required|string',
+                'dropoff_lat' => 'required|string',
+                'dropoff_long' => 'required|string',
+                'price' => 'required|numeric',
+                'payment_method' => 'required|string',
+                'status' => 'required|string',
+                'pickup_date' => 'required|datetime',
+                'notes' => 'nullable|string',
+            ]);
+            $app_user_id =  $this->getCurrentLoggedAppUserBySanctum()->id;
+
+            $moveRequest = MoverRequest::create([
+                'car_type' => $request->car_type,
+                'moved_item' => $request->moved_item,
+                'pickup_address' => $request->pickup_address,
+                'pickup_lat' => $request->pickup_lat,
+                'pickup_long' => $request->pickup_long,
+                'dropoff_address' => $request->dropoff_address,
+                'dropoff_lat' => $request->dropoff_lat,
+                'dropoff_long' => $request->dropoff_long,
+                'price' => $request->price,
+                'payment_method' => $request->payment_method,
+                'status' => $request->status,
+                'pickup_date' => $request->pickup_date,
+                'notes' => $request->notes,
+                'app_user_id' => $app_user_id,
+                // 'user_id' => $app_user_id,
+            ]);
+
+            return response()->json(['success' => true, 'data' => $moveRequest]);
+
+        } catch (\Throwable $th) {
+            //throw $th;
+            return response()->json(['success' => false, 'message' => $th->getMessage()]);
+        
+        }
+
+    }
 
     public function getUserPayments(Request $request)
     {
